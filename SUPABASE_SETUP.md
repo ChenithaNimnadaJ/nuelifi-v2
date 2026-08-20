@@ -88,7 +88,20 @@ On a fresh configured preview with no existing Supabase session, the application
 
 ## 5. Configure authentication
 
-In Supabase, open **Authentication → Providers** and enable the sign-in methods needed by Nuelifi. Email/password is the simplest first option. The application uses `supabase.auth.signUp`, `supabase.auth.signInWithPassword`, `supabase.auth.signOut`, and `supabase.auth.onAuthStateChange`.
+In Supabase, open **Authentication → Providers** and enable the sign-in methods needed by Nuelifi. Email/password is the simplest first option. The application uses `supabase.auth.signUp`, `supabase.auth.signInWithPassword`, `supabase.auth.signInWithOAuth`, `supabase.auth.signOut`, and `supabase.auth.onAuthStateChange`.
+
+### Google sign-in
+
+In **Authentication → Providers → Google**, enable the provider and enter the Google OAuth **Client ID** and **Client Secret** from Google Cloud Console. Supabase displays the provider callback URL in that configuration panel; copy that exact URL into Google Cloud Console under **APIs & Services → Credentials → OAuth 2.0 Client IDs → Authorized redirect URIs**. The frontend’s **Continue with Google** button calls:
+
+```ts
+await supabase.auth.signInWithOAuth({
+  provider: "google",
+  options: { redirectTo: window.location.origin },
+});
+```
+
+The app returns to the active preview origin after Google authentication. That origin must also be present in Supabase **Authentication → URL Configuration → Redirect URLs**.
 
 ### Fix email verification redirects
 

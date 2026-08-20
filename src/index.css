@@ -262,3 +262,9 @@ body { min-height: 100dvh; overflow-x: hidden; }
   .home-screen > .capture-card { grid-column: 1 / 2; }
   .home-screen > .section-title { margin-top: 26px; }
 }
+
+.auth-divider { align-items: center; color: #9aa59e; display: flex; font-size: 11px; gap: 12px; margin: 18px 0; text-transform: uppercase; letter-spacing: .08em; }
+.auth-divider::before, .auth-divider::after { background: #e6ebe7; content: ""; flex: 1; height: 1px; }
+.button-google { align-items: center; background: #fff; border: 1px solid #dce4de; color: #26322a; display: flex; gap: 10px; justify-content: center; width: 100%; }
+.button-google:hover { background: #f7faf7; border-color: #b9cbbb; }
+.google-glyph { align-items: center; color: #4285f4; display: inline-flex; font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; justify-content: center; }
