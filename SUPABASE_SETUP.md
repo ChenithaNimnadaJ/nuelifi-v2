@@ -92,7 +92,13 @@ In Supabase, open **Authentication → Providers** and enable the sign-in method
 
 ### Google sign-in
 
-In **Authentication → Providers → Google**, enable the provider and enter the Google OAuth **Client ID** and **Client Secret** from Google Cloud Console. Supabase displays the provider callback URL in that configuration panel; copy that exact URL into Google Cloud Console under **APIs & Services → Credentials → OAuth 2.0 Client IDs → Authorized redirect URIs**. The frontend’s **Continue with Google** button calls:
+In **Authentication → Providers → Google**, enable the provider and enter the Google OAuth **Client ID** and **Client Secret** from Google Cloud Console. For this project, the Google OAuth client’s **Authorized redirect URI** must be exactly:
+
+```text
+https://mtfqktpfcwoigmpmdkwh.supabase.co/auth/v1/callback
+```
+
+This is the **Supabase callback**, not the Nuelifi preview URL. Copy the same value into Google Cloud Console under **APIs & Services → Credentials → OAuth 2.0 Client IDs → Authorized redirect URIs**. The Google client’s **Authorized JavaScript origins** should contain the public Nuelifi preview/app origin, for example `https://your-preview-domain.example.com`, with no path. The frontend’s **Continue with Google** button calls:
 
 ```ts
 await supabase.auth.signInWithOAuth({
