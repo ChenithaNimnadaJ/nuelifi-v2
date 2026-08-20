@@ -16,8 +16,10 @@ const requireAuth = process.env.REQUIRE_AUTH === "true";
 async function authUser(req) {
   const header = req.headers.authorization || "";
   if (!header.startsWith("Bearer ")) { if (requireAuth) { const error = new Error("Authentication required"); error.status = 401; throw error; } return null; }
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_PUBLISHABLE_KEY) { const error = new Error("Supabase server authentication is not configured"); error.status = 503; throw error; }
-  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, { headers: { apikey: process.env.SUPABASE_PUBLISHABLE_KEY, authorization: header } });
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!supabaseUrl || !supabaseKey) { const error = new Error("Supabase server authentication is not configured"); error.status = 503; throw error; }
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: supabaseKey, authorization: header } });
   if (!response.ok) { const error = new Error("Invalid or expired authentication session"); error.status = 401; throw error; }
   return await response.json();
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "
 import { demoDashboard, demoProfile, nuelifiApi, type Action, type Dashboard, type Meal, type User } from "./lib/api";
 import { Analysing, MealCapture, MealPreview, MealResults, buildAnalysedMeal, type MealDraft, type ResultAction } from "./components/MealFlow";
 import { AuthScreen } from "./components/AuthScreen";
-import { supabase } from "./lib/supabase";
+import { getHealthySession, supabase } from "./lib/supabase";
 import { completeTask, createTask, fetchActions, fetchMeals, fetchProfile, fetchSubscription, saveMealResult, updateProfile as updateSupabaseProfile } from "./lib/supabaseData";
 
 type Screen = "home" | "analyse" | "meal-preview" | "analysing" | "meal-result" | "actions" | "insights" | "profile";
@@ -48,7 +48,7 @@ export default function App() {
   const dashboard = useMemo(() => makeDashboard(meals, actions), [meals, actions]);
   const offline = previewMode || !sessionUser;
 
-  useEffect(() => { if (!supabase) return; supabase.auth.getSession().then(({ data }) => { const user = data.session?.user; setSessionUser(user ? { id: user.id, email: user.email, name: user.user_metadata?.name } : null); setAuthReady(true); }); const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { const user = session?.user; setSessionUser(user ? { id: user.id, email: user.email, name: user.user_metadata?.name } : null); }); return () => listener.subscription.unsubscribe(); }, []);
+  useEffect(() => { if (!supabase) return; let active = true; getHealthySession().then((session) => { if (!active) return; const user = session?.user; setSessionUser(user ? { id: user.id, email: user.email, name: user.user_metadata?.name } : null); setAuthReady(true); }).catch(() => { if (active) { setSessionUser(null); setAuthReady(true); } }); const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { const user = session?.user; setSessionUser(user ? { id: user.id, email: user.email, name: user.user_metadata?.name } : null); }); return () => { active = false; listener.subscription.unsubscribe(); }; }, []);
 
   useEffect(() => { if (!authReady) return; if (previewMode) { const demo = demoDashboard(); setProfile(demoProfile()); setMeals(demo.recentMeals); setActions(demo.openActions); setSubscription({ plan: "free", status: "active" }); setDataState("ready"); setDataError(""); return; } const userId = sessionUser?.id; if (!userId) return; let active = true; setDataState("loading"); setDataError(""); Promise.all([fetchProfile(userId, { ...emptyProfile(sessionUser.email || ""), id: userId, email: sessionUser.email || "" }), fetchMeals(userId), fetchActions(userId), fetchSubscription(userId)]).then(([loadedProfile, loadedMeals, loadedActions, loadedSubscription]) => { if (!active) return; setProfile({ ...loadedProfile, email: sessionUser.email || loadedProfile.email }); setMeals(loadedMeals); setActions(loadedActions); setSubscription(loadedSubscription); setDataState("ready"); }).catch((error) => { if (!active) return; setDataState("error"); setDataError((error as Error).message || "Could not load your Nuelifi data."); setProfile({ ...emptyProfile(sessionUser.email || ""), id: userId, email: sessionUser.email || "" }); setMeals([]); setActions([]); }).finally(() => { if (active) setDataState((current) => current === "loading" ? "ready" : current); }); return () => { active = false; }; }, [authReady, previewMode, sessionUser?.id]);
 

@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { getHealthySession, refreshHealthySession } from "./supabase";
 
 export type MealRating = "Excellent" | "Good" | "Reasonable" | "Needs Adjustment";
 export interface User { id: string; email: string; name: string; goals: string[]; preferences?: Record<string, unknown>; }
@@ -7,10 +7,11 @@ export interface Action { id: string; userId: string; mealId: string | null; tit
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787";
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+async function request<T>(path: string, options?: RequestInit, allowRefresh = true): Promise<T> {
+  const session = await getHealthySession();
   const response = await fetch(`${API_URL}${path}`, { ...options, headers: { "content-type": "application/json", ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}), ...(options?.headers || {}) } });
   const payload = await response.json().catch(() => ({}));
+  if (!response.ok && allowRefresh && response.status === 401 && await refreshHealthySession()) return request<T>(path, options, false);
   if (!response.ok) throw new Error(payload.error || "Nuelifi API request failed");
   return payload as T;
 }
