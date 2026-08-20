@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { createStore } from "./store.mjs";
+import { analyzeMealWithGemini } from "./gemini.mjs";
 
 const port = Number(process.env.PORT || 8787);
 const dataFile = resolve(process.env.NUELIFI_DATA_FILE || "./data/nuelifi.json");
@@ -92,7 +93,12 @@ async function route(req, res) {
       if (req.method === "GET" && parts[3] === "meals") return send(res, 200, db.meals.filter((meal) => meal.userId === user.id).reverse());
       if (req.method === "POST" && parts[3] === "meals") {
         const input = await body(req); required(input.imageUrl, "imageUrl");
-        const meal = { id: randomUUID(), userId: user.id, imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis: mealAssessment(input.analysis) };
+        let analysis = mealAssessment(input.analysis);
+        if (process.env.GEMINI_API_KEY && !input.analysis) {
+          try { analysis = await analyzeMealWithGemini({ imageUrl: input.imageUrl, mealName: input.mealName || "Meal" }) || analysis; }
+          catch (error) { console.warn(`Gemini unavailable; using local assessment: ${error.message}`); }
+        }
+        const meal = { id: randomUUID(), userId: user.id, imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis };
         db.meals.push(meal);
         for (const title of meal.analysis.recommendations.slice(0, 3)) db.actions.push({ id: randomUUID(), userId: user.id, mealId: meal.id, title, completed: false, createdAt: now(), completedAt: null });
         await persist(); return send(res, 201, meal);
