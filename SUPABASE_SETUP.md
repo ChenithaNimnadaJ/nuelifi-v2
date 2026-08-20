@@ -28,7 +28,8 @@ Then replace the placeholders in `.env.local`.
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser Supabase client | Public | Your Supabase publishable/anon key |
 | `NEXT_PUBLIC_SUPABASE_URL` | Optional deployment alias | Public | Same Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Optional deployment alias | Public | Same Supabase publishable/anon key |
-| `VITE_API_URL` | Browser-to-backend requests | Public | The deployed backend URL, or `http://localhost:8787` locally |
+| `VITE_API_URL` | Browser-to-backend requests | Public URL | The deployed backend URL, or `http://localhost:8787` locally |
+| `REQUIRE_AUTH` | Backend route protection | Server configuration | Set `true` on the deployed backend; local preview can leave it unset for explicit preview analysis |
 | `SUPABASE_URL` | Server-side Supabase client | Server configuration | Your Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | Optional server-side Supabase client | Server configuration | Your Supabase publishable/anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Privileged server operations | **Private** | Replace only in the backend secret store |
@@ -80,7 +81,9 @@ pnpm run backend
 pnpm run dev
 ```
 
-The current application uses the backend for server-side meal analysis and Supabase for authenticated profile, meal, analysis, action, and subscription persistence.
+The current application uses the backend for server-side meal analysis and Supabase for authenticated profile, meal, analysis, action, and subscription persistence. The frontend sends the Supabase access token to the backend. With `REQUIRE_AUTH=true`, the backend rejects unauthenticated user-scoped requests with HTTP 401 and verifies that the token user matches the requested user ID.
+
+On a fresh configured preview with no existing Supabase session, the application opens **Start your Nuelifi journey** and shows the sign-up form. After successful sign-up or sign-in, Supabase Auth establishes the session and the frontend loads the signed-in user’s private data. Demo data is available only through the explicit **Continue with preview data** link.
 
 ## 5. Configure authentication
 

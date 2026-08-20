@@ -11,6 +11,23 @@ const dataFile = resolve(process.env.NUELIFI_DATA_FILE || "./data/nuelifi.json")
 const { db, persist, findUser, findMeal, findAction } = await createStore(dataFile);
 
 const now = () => new Date().toISOString();
+const requireAuth = process.env.REQUIRE_AUTH === "true";
+
+async function authUser(req) {
+  const header = req.headers.authorization || "";
+  if (!header.startsWith("Bearer ")) { if (requireAuth) { const error = new Error("Authentication required"); error.status = 401; throw error; } return null; }
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_PUBLISHABLE_KEY) { const error = new Error("Supabase server authentication is not configured"); error.status = 503; throw error; }
+  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, { headers: { apikey: process.env.SUPABASE_PUBLISHABLE_KEY, authorization: header } });
+  if (!response.ok) { const error = new Error("Invalid or expired authentication session"); error.status = 401; throw error; }
+  return await response.json();
+}
+
+async function scopedUser(req, id) {
+  const tokenUser = await authUser(req);
+  if (tokenUser && tokenUser.id !== id) { const error = new Error("You cannot access another user’s data"); error.status = 403; throw error; }
+  if (tokenUser) return findUser(id) || { id: tokenUser.id, email: tokenUser.email || "", name: tokenUser.user_metadata?.name || "", goals: [], preferences: {} };
+  return userOrFail(id);
+}
 
 async function analyzeMeal(imageUrl, mealName) {
   const providers = [];
@@ -27,7 +44,7 @@ const send = (res, status, payload) => {
     "content-type": "application/json; charset=utf-8",
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-    "access-control-allow-headers": "content-type",
+    "access-control-allow-headers": "content-type, authorization",
   });
   res.end(JSON.stringify(payload));
 };
@@ -94,13 +111,20 @@ async function route(req, res) {
       db.users.push(user); db.subscriptions.push({ id: randomUUID(), userId: user.id, plan: "free", status: "active", createdAt: now() }); await persist();
       return send(res, 201, user);
     }
+    if (parts[1] === "auth" && parts[2] === "me" && req.method === "GET") {
+      const user = await authUser(req);
+      if (!user) return fail(res, 401, "Authentication required");
+      return send(res, 200, { id: user.id, email: user.email || "", name: user.user_metadata?.name || "" });
+    }
     if (parts[1] === "analyze" && req.method === "POST") {
       const input = await body(req); required(input.imageUrl, "imageUrl");
+      const tokenUser = await authUser(req);
+      if (tokenUser && input.userId && tokenUser.id !== input.userId) return fail(res, 403, "You cannot analyze for another user");
       const result = await analyzeMeal(input.imageUrl, input.mealName || "Meal");
-      return send(res, 200, { id: `analysis-${Date.now()}`, userId: input.userId || "", imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis: result.analysis, provider: result.provider });
+      return send(res, 200, { id: `analysis-${Date.now()}`, userId: tokenUser?.id || input.userId || "", imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis: result.analysis, provider: result.provider });
     }
     if (parts[1] === "users") {
-      const user = userOrFail(parts[2]);
+      const user = await scopedUser(req, parts[2]);
       if (req.method === "GET" && parts[3] === "dashboard") return send(res, 200, { user, ...dashboard(user.id) });
       if (req.method === "GET" && parts[3] === "profile") return send(res, 200, user);
       if (req.method === "PATCH" && parts[3] === "profile") {
@@ -125,7 +149,7 @@ async function route(req, res) {
       if (req.method === "GET" && parts[3] === "subscription") return send(res, 200, db.subscriptions.find((item) => item.userId === user.id) || { plan: "free", status: "active" });
     }
     if (parts[1] === "meals" && req.method === "GET") { const meal = findMeal(parts[2]); if (!meal) return fail(res, 404, "Meal not found"); return send(res, 200, meal); }
-    if (parts[1] === "actions" && req.method === "PATCH") { const action = findAction(parts[2]); if (!action) return fail(res, 404, "Action not found"); const input = await body(req); action.completed = input.completed ?? true; action.completedAt = action.completed ? now() : null; await persist(); return send(res, 200, action); }
+    if (parts[1] === "actions" && req.method === "PATCH") { const action = findAction(parts[2]); if (!action) return fail(res, 404, "Action not found"); const tokenUser = await authUser(req); if (tokenUser && tokenUser.id !== action.userId) return fail(res, 403, "You cannot update another user’s action"); const input = await body(req); action.completed = input.completed ?? true; action.completedAt = action.completed ? now() : null; await persist(); return send(res, 200, action); }
     return fail(res, 404, "Route not found");
   } catch (error) { return fail(res, error.status || 400, error.message); }
 }
