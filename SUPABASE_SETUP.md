@@ -29,6 +29,7 @@ Then replace the placeholders in `.env.local`.
 | `NEXT_PUBLIC_SUPABASE_URL` | Optional deployment alias | Public | Same Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Optional deployment alias | Public | Same Supabase publishable/anon key |
 | `VITE_API_URL` | Browser-to-backend requests | Public URL | The deployed backend URL, or `http://localhost:8787` locally |
+| `VITE_AUTH_REDIRECT_URL` | Supabase email verification callback | Public URL | Optional exact app/preview origin; otherwise the current browser origin is used |
 | `REQUIRE_AUTH` | Backend route protection | Server configuration | Set `true` on the deployed backend; local preview can leave it unset for explicit preview analysis |
 | `SUPABASE_URL` | Server-side Supabase client | Server configuration | Your Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | Optional server-side Supabase client | Server configuration | Your Supabase publishable/anon key |
@@ -88,6 +89,18 @@ On a fresh configured preview with no existing Supabase session, the application
 ## 5. Configure authentication
 
 In Supabase, open **Authentication → Providers** and enable the sign-in methods needed by Nuelifi. Email/password is the simplest first option. The application uses `supabase.auth.signUp`, `supabase.auth.signInWithPassword`, `supabase.auth.signOut`, and `supabase.auth.onAuthStateChange`.
+
+### Fix email verification redirects
+
+Supabase uses its Auth URL Configuration to decide where email verification links return. In the Supabase dashboard, open **Authentication → URL Configuration** and set:
+
+| Setting | Value |
+| --- | --- |
+| **Site URL** | The public URL of the deployed Nuelifi app or preview, not `http://localhost:3000` unless you are actually testing there. |
+| **Redirect URLs** | Add the exact public preview URL and, if supported by your workflow, its wildcard path such as `https://your-preview-domain.example/**`. |
+| Local development | Add `http://localhost:5173/**` for Vite dev and `http://localhost:4173/**` for the usual Vite preview port. Add `http://localhost:3000/**` only if you truly run the app on port 3000. |
+
+The frontend now sends `emailRedirectTo: window.location.origin` during signup, or uses `VITE_AUTH_REDIRECT_URL` if you set an explicit public origin. The origin used by the app must also be present in Supabase’s **Redirect URLs** allowlist. After changing these settings, create a new signup request; old verification emails retain their original redirect target.
 
 ## 6. Security notes
 
