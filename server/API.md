@@ -7,6 +7,7 @@ The local API runs on `http://localhost:8787` with `npm run backend`. Data is st
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/health` | Service health check. |
+| `POST` | `/api/analyze` | Analyze an image with Groq-first AI routing; returns validated analysis without writing data. The authenticated frontend then persists the meal and analysis to Supabase. |
 | `POST` | `/api/users` | Create a user and free subscription. Body: `{ email, name?, goals? }`. |
 | `GET` | `/api/users/:id/dashboard` | Dashboard summary with meal and action progress. |
 | `GET` | `/api/users/:id/profile` | Read profile and preferences. |
@@ -30,4 +31,4 @@ curl -X PATCH http://localhost:8787/api/actions/demo-action-2 \
   -d '{"completed":true}'
 ```
 
-The current analysis is intentionally deterministic and local so the UI can be developed immediately. A production analysis worker can replace `mealAssessment` while preserving the response shape. Authentication, object storage, payment provider webhooks, and a managed relational database should be added before handling real user health data.
+Meal analysis now uses Groq Qwen 3.6 27B when configured, with Gemini as a fallback and the deterministic local assessment as a final fallback. The AI provider never writes to the database directly. The server validates the returned shape, the frontend persists the meal and analysis to Supabase for the signed-in user, and the shared Add to tasks action inserts recommendation tasks only after explicit user selection.

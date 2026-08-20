@@ -4,12 +4,24 @@ import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { createStore } from "./store.mjs";
 import { analyzeMealWithGemini } from "./gemini.mjs";
+import { analyzeMealWithGroq } from "./groq.mjs";
 
 const port = Number(process.env.PORT || 8787);
 const dataFile = resolve(process.env.NUELIFI_DATA_FILE || "./data/nuelifi.json");
 const { db, persist, findUser, findMeal, findAction } = await createStore(dataFile);
 
 const now = () => new Date().toISOString();
+
+async function analyzeMeal(imageUrl, mealName) {
+  const providers = [];
+  if (process.env.GROQ_API_KEY) providers.push(["groq", () => analyzeMealWithGroq({ imageUrl, mealName })]);
+  if (process.env.GEMINI_API_KEY) providers.push(["gemini", () => analyzeMealWithGemini({ imageUrl, mealName })]);
+  let lastError;
+  for (const [name, run] of providers) {
+    try { const analysis = await run(); if (analysis) return { analysis, provider: name }; } catch (error) { lastError = error; console.warn(`${name} meal analysis unavailable: ${error.message}`); }
+  }
+  throw lastError || new Error("No AI provider is configured");
+}
 const send = (res, status, payload) => {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -82,6 +94,11 @@ async function route(req, res) {
       db.users.push(user); db.subscriptions.push({ id: randomUUID(), userId: user.id, plan: "free", status: "active", createdAt: now() }); await persist();
       return send(res, 201, user);
     }
+    if (parts[1] === "analyze" && req.method === "POST") {
+      const input = await body(req); required(input.imageUrl, "imageUrl");
+      const result = await analyzeMeal(input.imageUrl, input.mealName || "Meal");
+      return send(res, 200, { id: `analysis-${Date.now()}`, userId: input.userId || "", imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis: result.analysis, provider: result.provider });
+    }
     if (parts[1] === "users") {
       const user = userOrFail(parts[2]);
       if (req.method === "GET" && parts[3] === "dashboard") return send(res, 200, { user, ...dashboard(user.id) });
@@ -94,13 +111,12 @@ async function route(req, res) {
       if (req.method === "POST" && parts[3] === "meals") {
         const input = await body(req); required(input.imageUrl, "imageUrl");
         let analysis = mealAssessment(input.analysis);
-        if (process.env.GEMINI_API_KEY && !input.analysis) {
-          try { analysis = await analyzeMealWithGemini({ imageUrl: input.imageUrl, mealName: input.mealName || "Meal" }) || analysis; }
-          catch (error) { console.warn(`Gemini unavailable; using local assessment: ${error.message}`); }
+        if (!input.analysis && (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY)) {
+          try { analysis = (await analyzeMeal(input.imageUrl, input.mealName || "Meal")).analysis || analysis; }
+          catch (error) { console.warn(`AI unavailable; using local assessment: ${error.message}`); }
         }
         const meal = { id: randomUUID(), userId: user.id, imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis };
         db.meals.push(meal);
-        for (const title of meal.analysis.recommendations.slice(0, 3)) db.actions.push({ id: randomUUID(), userId: user.id, mealId: meal.id, title, completed: false, createdAt: now(), completedAt: null });
         await persist(); return send(res, 201, meal);
       }
       if (req.method === "GET" && parts[3] === "actions") return send(res, 200, db.actions.filter((action) => action.userId === user.id).reverse());

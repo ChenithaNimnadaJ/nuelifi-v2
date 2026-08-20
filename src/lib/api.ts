@@ -16,7 +16,7 @@ export const nuelifiApi = {
   profile: (userId: string) => request<User>(`/api/users/${userId}/profile`),
   updateProfile: (userId: string, input: Partial<Pick<User, "name" | "goals" | "preferences">>) => request<User>(`/api/users/${userId}/profile`, { method: "PATCH", body: JSON.stringify(input) }),
   meals: (userId: string) => request<Meal[]>(`/api/users/${userId}/meals`),
-  analyseMeal: (userId: string, imageUrl: string, mealName?: string) => request<Meal>(`/api/users/${userId}/meals`, { method: "POST", body: JSON.stringify({ imageUrl, mealName }) }),
+  analyseMeal: (userId: string, imageUrl: string, mealName?: string) => request<Meal>(`/api/analyze`, { method: "POST", body: JSON.stringify({ userId, imageUrl, mealName }) }),
   actions: (userId: string) => request<Action[]>(`/api/users/${userId}/actions`),
   completeAction: (actionId: string, completed = true) => request<Action>(`/api/actions/${actionId}`, { method: "PATCH", body: JSON.stringify({ completed }) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),
