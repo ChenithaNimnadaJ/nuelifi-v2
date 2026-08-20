@@ -34,6 +34,15 @@ export interface Action {
   completedAt: string | null;
 }
 
+export interface Dashboard {
+  mealsAnalysed: number;
+  actionsCompleted: number;
+  actionsTotal: number;
+  averageMealScore: number;
+  recentMeals: Meal[];
+  openActions: Action[];
+}
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -46,8 +55,21 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return payload as T;
 }
 
+export const demoDashboard = (): Dashboard => ({
+  mealsAnalysed: 1,
+  actionsCompleted: 1,
+  actionsTotal: 2,
+  averageMealScore: 78,
+  recentMeals: [{
+    id: "demo-meal", userId: "demo-user", imageUrl: "", mealName: "Colourful grain bowl",
+    capturedAt: new Date().toISOString(), status: "analysed",
+    analysis: { rating: "Good", score: 78, indicators: { vegetables: 3, fibre: 8, sugar: 1 }, explanation: "A balanced meal with a strong mix of food groups.", recommendations: ["Take a short walk after eating", "Drink more water"] },
+  }],
+  openActions: [{ id: "demo-action-2", userId: "demo-user", mealId: "demo-meal", title: "Drink more water", completed: false, createdAt: new Date().toISOString(), completedAt: null }],
+});
+
 export const nuelifiApi = {
-  dashboard: (userId: string) => request(`/api/users/${userId}/dashboard`),
+  dashboard: (userId: string) => request<Dashboard>(`/api/users/${userId}/dashboard`),
   profile: (userId: string) => request<User>(`/api/users/${userId}/profile`),
   updateProfile: (userId: string, input: Partial<Pick<User, "name" | "goals" | "preferences">>) => request<User>(`/api/users/${userId}/profile`, { method: "PATCH", body: JSON.stringify(input) }),
   meals: (userId: string) => request<Meal[]>(`/api/users/${userId}/meals`),
