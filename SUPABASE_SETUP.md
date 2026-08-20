@@ -1,16 +1,77 @@
-# Supabase and Gemini setup
+# Supabase and AI environment setup
 
 ## 1. Apply the database schema
 
-Open the Supabase project dashboard, go to **SQL Editor**, create a new query, paste the contents of `supabase/migrations/202608210001_nuelifi_core.sql`, and run it. This creates profiles, meals, meal analyses, actions, subscriptions, indexes, timestamps, a new-user trigger, and owner-only Row Level Security policies.
+Open the Supabase project dashboard, go to **SQL Editor**, create a new query, paste the contents of `supabase/migrations/202608210001_nuelifi_core.sql`, and run it. This creates `profiles`, `meals`, `meal_analyses`, `actions`, and `subscriptions`, together with indexes, timestamps, the new-user trigger, and owner-only Row Level Security policies.
 
 The migration expects Supabase Auth users. It automatically creates a profile and free subscription when a new Auth user is created.
 
-## 2. Configure local environment variables
+## 2. Local replacement file
 
-Copy `.env.example` to `.env.local` and fill in the values. The frontend may use only `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_API_URL`. Keep `SUPABASE_SERVICE_ROLE_KEY` and `GEMINI_API_KEY` server-side only.
+For local development, copy the committed template to this ignored file:
 
-Start the local services with:
+```text
+/home/ubuntu/nuelifi-v2/.env.local
+```
+
+Use:
+
+```sh
+cp .env.example .env.local
+```
+
+Then replace the placeholders in `.env.local`.
+
+| Variable | Used by | Secret level | Replacement |
+| --- | --- | --- | --- |
+| `VITE_SUPABASE_URL` | Browser Supabase client | Public | Your Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser Supabase client | Public | Your Supabase publishable/anon key |
+| `NEXT_PUBLIC_SUPABASE_URL` | Optional deployment alias | Public | Same Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Optional deployment alias | Public | Same Supabase publishable/anon key |
+| `VITE_API_URL` | Browser-to-backend requests | Public | The deployed backend URL, or `http://localhost:8787` locally |
+| `SUPABASE_URL` | Server-side Supabase client | Server configuration | Your Supabase project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Optional server-side Supabase client | Server configuration | Your Supabase publishable/anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Privileged server operations | **Private** | Replace only in the backend secret store |
+| `GROQ_API_KEY` | Server-side meal analysis | **Private** | Replace only in the backend secret store |
+| `GROQ_MODEL` | Server-side meal analysis | Configuration | `qwen/qwen3.6-27b` |
+| `GEMINI_API_KEY` | Optional server-side fallback | **Private** | Replace only in the backend secret store |
+
+The browser client supports both `VITE_*` and `NEXT_PUBLIC_*` Supabase public names. The Vite build maps the Next-style aliases when a deployment platform provides those names.
+
+## 3. Deployment replacement locations
+
+For the frontend preview or web deployment, add only the public variables to the platform’s **build environment variables**:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_API_URL
+```
+
+If the platform specifically provides Next-style names, use:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+VITE_API_URL
+```
+
+For the backend service, add the server-only variables to the platform’s **runtime secret/environment settings**:
+
+```text
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY
+GROQ_API_KEY
+GROQ_MODEL=qwen/qwen3.6-27b
+GEMINI_API_KEY
+GEMINI_MODEL=gemini-3.7-flash
+GEMINI_FALLBACK_MODELS=gemini-3.5-flash,gemini-2.5-flash
+```
+
+The frontend and backend must use the same Supabase project. The frontend should never receive `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, or `GEMINI_API_KEY`.
+
+## 4. Start locally
 
 ```sh
 pnpm install
@@ -19,18 +80,12 @@ pnpm run backend
 pnpm run dev
 ```
 
-## 3. Configure authentication
+The current application uses the backend for server-side meal analysis and Supabase for authenticated profile, meal, analysis, action, and subscription persistence.
 
-In Supabase, open **Authentication → Providers** and enable the sign-in methods needed by Nuelifi. Email/password or magic-link authentication is the simplest first option. Once selected, the current demo-user flow can be replaced with `supabase.auth.signInWithPassword`, `supabase.auth.signInWithOtp`, and `supabase.auth.onAuthStateChange`.
+## 5. Configure authentication
 
-## 4. Configure Gemini
+In Supabase, open **Authentication → Providers** and enable the sign-in methods needed by Nuelifi. Email/password is the simplest first option. The application uses `supabase.auth.signUp`, `supabase.auth.signInWithPassword`, `supabase.auth.signOut`, and `supabase.auth.onAuthStateChange`.
 
-The backend uses Google's `generateContent` REST endpoint with the `gemini-3.7-flash` model by default. The model accepts image input and structured JSON output. Set `GEMINI_API_KEY` in the server environment. If the key is absent or the request fails, the backend keeps the current deterministic analysis so preview development remains available.
+## 6. Security notes
 
-## 5. Storage
-
-When real uploads are enabled, create a private Storage bucket named `meal-images`. Uploads should be associated with the authenticated user's ID, and the server should issue signed URLs for analysis and display. Do not make meal images public if they may contain personal or health-related information.
-
-## Security notes
-
-Never place a Supabase service-role key or Gemini key in `src/`, `VITE_*` variables, browser code, or committed files. The publishable Supabase key is designed for browser use with Row Level Security enabled. Rotate any credential that has been shared outside the intended secret-management workflow.
+Never commit `.env.local` or any real server secret. Never place a service-role, Groq, or Gemini key in `src/`, `VITE_*`, `NEXT_PUBLIC_*`, or browser code. Public Supabase values are designed for browser use only when Row Level Security is enabled. Rotate any credential that has been shared outside the intended secret-management workflow.
