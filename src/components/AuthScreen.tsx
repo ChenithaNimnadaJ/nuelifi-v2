@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export function AuthScreen({ onPreview }: { onPreview: () => void }) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
