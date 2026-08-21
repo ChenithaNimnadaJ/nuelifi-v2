@@ -19,3 +19,8 @@ The Worker serves the Nuelifi frontend and `/health`, `/api/analyze`, and CORS p
 The Cloudflare Pages project deployments remain HTTP 500 even after static-only direct-upload attempts. The Worker deployment is therefore the canonical live URL for this release; the Pages project was left intact for later cleanup or repair.
 
 The production frontend build was generated with `VITE_API_URL=https://nuelifi.chenithanimnadaj.workers.dev` and `VITE_AUTH_REDIRECT_URL=https://nuelifi.chenithanimnadaj.workers.dev`. The bundle was verified to contain the live Worker API URL. Browser verification confirmed the authentication screen, preview dashboard, Analyse, Actions, Insights, and Profile screens render on the Worker URL.
+
+
+## Responsive UI release
+
+The fluid responsive, semantic dark-mode, pre-auth theme selector, and protected preview handoff release was deployed successfully as Worker deployment `c1d4304469714db68f676c914e3bdff0` on 2026-08-21T16:20:11Z. The live asset bundle is `index-B5lYCr3I.js` and `index-DxTLXHiC.css`; the live Worker URL remains `https://nuelifi.chenithanimnadaj.workers.dev/`.
