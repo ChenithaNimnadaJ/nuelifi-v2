@@ -1,4 +1,5 @@
 import { getHealthySession, refreshHealthySession } from "./supabase";
+import type { AnalysisLevel, PlanId } from "./plans";
 
 export type MealRating = "Excellent" | "Good" | "Reasonable" | "Needs Adjustment";
 export interface HealthContext { conditions: string[]; allergies: string[]; notes?: string; }
@@ -8,6 +9,7 @@ export interface User { id: string; email: string; name: string; goals: string[]
 export interface Meal { id: string; userId: string; imageUrl: string; mealName: string; capturedAt: string; status: "analysed"; analysis: MealAnalysis; }
 export interface Action { id: string; userId: string; mealId: string | null; title: string; completed: boolean; createdAt: string; completedAt: string | null; }
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
+export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
 
 const API_URL = String(import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 async function request<T>(path: string, options?: RequestInit, allowRefresh = true): Promise<T> {
@@ -41,4 +43,5 @@ export const nuelifiApi = {
   completeAction: (actionId: string, completed = true) => request<Action>(`/api/actions/${actionId}`, { method: "PATCH", body: JSON.stringify({ completed }) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),
   subscription: (userId: string) => request(`/api/users/${userId}/subscription`),
+  usage: () => request<UsageSnapshot>("/api/usage"),
 };

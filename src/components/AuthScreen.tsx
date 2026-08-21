@@ -3,8 +3,8 @@ import { supabase } from "../lib/supabase";
 
 type ThemeMode = "system" | "light" | "dark";
 
-export function AuthScreen({ onPreview, themeMode, onThemeChange }: { onPreview: () => void; themeMode: ThemeMode; onThemeChange: (mode: ThemeMode) => Promise<void> }) {
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
+export function AuthScreen({ onPreview, themeMode, onThemeChange, initialMode = "signup" }: { onPreview: () => void; themeMode: ThemeMode; onThemeChange: (mode: ThemeMode) => Promise<void>; initialMode?: "signin" | "signup" }) {
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
