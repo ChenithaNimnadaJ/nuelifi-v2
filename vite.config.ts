@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+  const apiProxyTarget = process.env.VITE_API_URL || 'http://localhost:8787'
 
   return {
     base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
@@ -41,10 +42,12 @@ export default defineConfig(({ mode }) => {
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
       watch: { ignored: ['**/.figma/**'] },
+      proxy: { '/api': { target: apiProxyTarget, changeOrigin: true } },
     },
     preview: {
       host: '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
+      proxy: { '/api': { target: apiProxyTarget, changeOrigin: true } },
     },
   }
 })

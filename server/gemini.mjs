@@ -1,3 +1,5 @@
+import { normalizeMealAnalysis } from "./groq.mjs";
+
 const primaryModel = process.env.GEMINI_MODEL || "gemini-3.7-flash";
 const fallbackModels = (process.env.GEMINI_FALLBACK_MODELS || "gemini-3.5-flash,gemini-2.5-flash").split(",").map((value) => value.trim()).filter(Boolean);
 
@@ -58,7 +60,7 @@ export async function analyzeMealWithGemini({ imageUrl, mealName = "Meal" }) {
   const models = [...new Set([primaryModel, ...fallbackModels])];
   let lastError;
   for (const model of models) {
-    try { return await requestModel(model, image, mealName); } catch (error) { lastError = error; console.warn(`Gemini model ${model} unavailable: ${error.message}`); }
+    try { return normalizeMealAnalysis(await requestModel(model, image, mealName)); } catch (error) { lastError = error; console.warn(`Gemini model ${model} unavailable: ${error.message}`); }
   }
   throw lastError || new Error("No Gemini model was available");
 }

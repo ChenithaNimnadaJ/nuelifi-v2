@@ -6,14 +6,24 @@ export interface Meal { id: string; userId: string; imageUrl: string; mealName: 
 export interface Action { id: string; userId: string; mealId: string | null; title: string; completed: boolean; createdAt: string; completedAt: string | null; }
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787";
+const API_URL = String(import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 async function request<T>(path: string, options?: RequestInit, allowRefresh = true): Promise<T> {
   const session = await getHealthySession();
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers: { "content-type": "application/json", ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}), ...(options?.headers || {}) } });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok && allowRefresh && response.status === 401 && await refreshHealthySession()) return request<T>(path, options, false);
-  if (!response.ok) throw new Error(payload.error || "Nuelifi API request failed");
-  return payload as T;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 60000);
+  try {
+    const response = await fetch(`${API_URL}${path}`, { ...options, signal: controller.signal, headers: { "content-type": "application/json", ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}), ...(options?.headers || {}) } });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok && allowRefresh && response.status === 401 && await refreshHealthySession()) return request<T>(path, options, false);
+    if (!response.ok) throw new Error(payload.error || "Nuelifi API request failed");
+    return payload as T;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw new Error("The meal scanner timed out. Check that the Nuelifi backend is running and try again.");
+    if (error instanceof TypeError) throw new Error("The meal scanner could not reach the Nuelifi backend. Set VITE_API_URL to the public backend URL or start the backend locally.");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 export const demoProfile = (): User => ({ id: "demo-user", email: "sarah@example.com", name: "Sarah Chen", goals: ["Reduce blood sugar", "Eat more vegetables", "Lower cholesterol", "Build consistent habits"], preferences: { notifications: true, dailyReminders: true, weeklySummary: false, appearance: "light" } });
