@@ -5,6 +5,19 @@ const geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models"
 
 function env(name, fallback = "") { return Netlify.env.get(name) || fallback; }
 function json(status, payload) { return new Response(JSON.stringify(payload), { status, headers: { "content-type": "application/json; charset=utf-8" } }); }
+async function authUser(request) {
+  const authorization = request.headers.get("authorization") || "";
+  if (!authorization.startsWith("Bearer ")) {
+    if (env("REQUIRE_AUTH", "false") === "true") throw Object.assign(new Error("Authentication required"), { status: 401 });
+    return null;
+  }
+  const supabaseUrl = env("SUPABASE_URL");
+  const supabaseKey = env("SUPABASE_PUBLISHABLE_KEY");
+  if (!supabaseUrl || !supabaseKey) throw Object.assign(new Error("Supabase server authentication is not configured"), { status: 503 });
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: supabaseKey, authorization } });
+  if (!response.ok) throw Object.assign(new Error("Invalid or expired authentication session"), { status: 401 });
+  return response.json();
+}
 
 async function imagePart(imageUrl) {
   if (imageUrl.startsWith("data:")) {
@@ -50,6 +63,8 @@ export default async function handler(request) {
   try {
     const input = await request.json();
     if (!input?.imageUrl) return json(400, { error: "imageUrl is required" });
+    const tokenUser = await authUser(request);
+    if (tokenUser && input.userId && tokenUser.id !== input.userId) return json(403, { error: "You cannot analyze for another user" });
     const image = await imagePart(String(input.imageUrl));
     const mealName = String(input.mealName || "Meal");
     const groqKey = env("GROQ_API_KEY");
@@ -60,9 +75,9 @@ export default async function handler(request) {
     if (groqKey) { try { analysis = await analyzeGroq(image, mealName, groqKey, env("GROQ_MODEL", "qwen/qwen3.6-27b")); provider = "groq"; } catch (error) { lastError = error; } }
     if (!analysis && geminiKey) { for (const model of [...new Set([env("GEMINI_MODEL", "gemini-3.7-flash"), ...env("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash,gemini-2.5-flash").split(",").map((value) => value.trim()).filter(Boolean)])]) { try { analysis = await analyzeGemini(image, mealName, geminiKey, model); provider = "gemini"; break; } catch (error) { lastError = error; } } }
     if (!analysis) throw lastError || new Error("No AI provider is configured");
-    return json(200, { id: `analysis-${Date.now()}`, userId: input.userId || "", imageUrl: input.imageUrl, mealName, capturedAt: new Date().toISOString(), status: "analysed", analysis, provider });
+    return json(200, { id: `analysis-${Date.now()}`, userId: tokenUser?.id || input.userId || "", imageUrl: input.imageUrl, mealName, capturedAt: new Date().toISOString(), status: "analysed", analysis, provider });
   } catch (error) {
-    return json(error?.name === "AbortError" ? 504 : 502, { error: error instanceof Error ? error.message : "Meal analysis failed" });
+    return json(error?.status || (error?.name === "AbortError" ? 504 : 502), { error: error instanceof Error ? error.message : "Meal analysis failed" });
   }
 }
 
