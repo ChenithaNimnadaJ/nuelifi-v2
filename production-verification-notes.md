@@ -145,3 +145,7 @@ Post-analysis Insights passed: the live screen showed `84/100` average score, `3
 The final bounded Supabase check passed: profile name `Nuelifi E2E Test User Updated`, goals `Improve energy`, `Eat more vegetables`, and `Improve sleep`, appearance `dark`, `3` meals, `3` analyses, and `6` actions. This confirms profile editing, theme persistence, AI result persistence, and combined task creation all reach the database.
 
 The disposable test account was signed out successfully. The production bundle returned to the unauthenticated “Start your Nuelifi journey” screen with the theme selector, email flow, Google button, and preview option intact; no alert or blank state appeared.
+
+## Final production smoke checks — 2026-08-21
+
+The final canonical Worker checks passed after deployment `db045db0ffbc469c85284e9085e4d187`: root `/` returned HTTP 200, `/health` returned `{"status":"ok","service":"nuelifi-cloudflare"}`, unauthenticated `POST /api/analyze` returned HTTP 401, CORS preflight returned HTTP 204, and the root HTML referenced `index-C754ou1h.js` and `index-6l0zo_MC.css`. The repository is clean at commit `649056e` on `main`.
