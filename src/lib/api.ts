@@ -1,8 +1,11 @@
 import { getHealthySession, refreshHealthySession } from "./supabase";
 
 export type MealRating = "Excellent" | "Good" | "Reasonable" | "Needs Adjustment";
-export interface User { id: string; email: string; name: string; goals: string[]; preferences?: Record<string, unknown>; }
-export interface Meal { id: string; userId: string; imageUrl: string; mealName: string; capturedAt: string; status: "analysed"; analysis: { rating: MealRating; score: number; indicators: Record<string, number>; explanation: string; recommendations: string[]; }; }
+export interface HealthContext { conditions: string[]; allergies: string[]; notes?: string; }
+export interface UserPreferences { notifications?: boolean; dailyReminders?: boolean; weeklySummary?: boolean; appearance?: "system" | "light" | "dark"; onboardingCompleted?: boolean; dietaryPreference?: string; activityLevel?: string; healthContext?: HealthContext; [key: string]: unknown; }
+export interface MealAnalysis { rating: MealRating; score: number; indicators: Record<string, number>; explanation: string; mealGuidance: string[]; dailyTasks: string[]; recommendations?: string[]; }
+export interface User { id: string; email: string; name: string; goals: string[]; preferences?: UserPreferences; }
+export interface Meal { id: string; userId: string; imageUrl: string; mealName: string; capturedAt: string; status: "analysed"; analysis: MealAnalysis; }
 export interface Action { id: string; userId: string; mealId: string | null; title: string; completed: boolean; createdAt: string; completedAt: string | null; }
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
 
@@ -18,16 +21,14 @@ async function request<T>(path: string, options?: RequestInit, allowRefresh = tr
     if (!response.ok) throw new Error(payload.error || "Nuelifi API request failed");
     return payload as T;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw new Error("The meal scanner timed out. Check that the Nuelifi backend is running and try again.");
-    if (error instanceof TypeError) throw new Error("The meal scanner could not reach the Nuelifi backend. Set VITE_API_URL to the public backend URL or start the backend locally.");
+    if (error instanceof DOMException && error.name === "AbortError") throw new Error("The meal scanner timed out. Please try again in a moment.");
+    if (error instanceof TypeError) throw new Error("The meal scanner could not reach the Nuelifi backend. Please check your connection and try again.");
     throw error;
-  } finally {
-    window.clearTimeout(timeout);
-  }
+  } finally { window.clearTimeout(timeout); }
 }
 
-export const demoProfile = (): User => ({ id: "demo-user", email: "sarah@example.com", name: "Sarah Chen", goals: ["Reduce blood sugar", "Eat more vegetables", "Lower cholesterol", "Build consistent habits"], preferences: { notifications: true, dailyReminders: true, weeklySummary: false, appearance: "light" } });
-export const demoDashboard = (): Dashboard => ({ mealsAnalysed: 1, actionsCompleted: 1, actionsTotal: 2, averageMealScore: 78, recentMeals: [{ id: "demo-meal", userId: "demo-user", imageUrl: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80", mealName: "Colourful grain bowl", capturedAt: new Date().toISOString(), status: "analysed", analysis: { rating: "Good", score: 78, indicators: { vegetables: 3, fibre: 8, sugar: 1 }, explanation: "A balanced meal with a strong mix of food groups.", recommendations: ["Take a short walk after eating", "Drink more water"] } }], openActions: [{ id: "demo-action-2", userId: "demo-user", mealId: "demo-meal", title: "Drink more water", completed: false, createdAt: new Date().toISOString(), completedAt: null }] });
+export const demoProfile = (): User => ({ id: "demo-user", email: "sarah@example.com", name: "Sarah Chen", goals: ["Reduce blood sugar", "Eat more vegetables", "Lower cholesterol", "Build consistent habits"], preferences: { notifications: true, dailyReminders: true, weeklySummary: false, appearance: "light", healthContext: { conditions: [], allergies: [] } } });
+export const demoDashboard = (): Dashboard => ({ mealsAnalysed: 1, actionsCompleted: 1, actionsTotal: 2, averageMealScore: 78, recentMeals: [{ id: "demo-meal", userId: "demo-user", imageUrl: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80", mealName: "Colourful grain bowl", capturedAt: new Date().toISOString(), status: "analysed", analysis: { rating: "Good", score: 78, indicators: { vegetables: 3, fibre: 8, sugar: 1 }, explanation: "A balanced meal with a strong mix of food groups.", mealGuidance: ["Keep the colourful vegetable mix going.", "Pair the grain portion with a steady protein source."], dailyTasks: ["Drink a glass of water with your next meal", "Take a short walk or movement break today"] } }], openActions: [{ id: "demo-action-2", userId: "demo-user", mealId: "demo-meal", title: "Take a short walk or movement break today", completed: false, createdAt: new Date().toISOString(), completedAt: null }] });
 
 export const nuelifiApi = {
   authMe: () => request<{ id: string; email: string }>("/api/auth/me"),
@@ -35,7 +36,7 @@ export const nuelifiApi = {
   profile: (userId: string) => request<User>(`/api/users/${userId}/profile`),
   updateProfile: (userId: string, input: Partial<Pick<User, "name" | "goals" | "preferences">>) => request<User>(`/api/users/${userId}/profile`, { method: "PATCH", body: JSON.stringify(input) }),
   meals: (userId: string) => request<Meal[]>(`/api/users/${userId}/meals`),
-  analyseMeal: (userId: string, imageUrl: string, mealName?: string) => request<Meal>(`/api/analyze`, { method: "POST", body: JSON.stringify({ userId, imageUrl, mealName }) }),
+  analyseMeal: (userId: string, imageUrl: string, mealName?: string, context?: { goals: string[]; preferences: UserPreferences }) => request<Meal>(`/api/analyze`, { method: "POST", body: JSON.stringify({ userId, imageUrl, mealName, context }) }),
   actions: (userId: string) => request<Action[]>(`/api/users/${userId}/actions`),
   completeAction: (actionId: string, completed = true) => request<Action>(`/api/actions/${actionId}`, { method: "PATCH", body: JSON.stringify({ completed }) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),

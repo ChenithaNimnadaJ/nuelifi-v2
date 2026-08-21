@@ -1,71 +1,25 @@
 import { getHealthySession, refreshHealthySession, supabase } from "./supabase";
-import type { Action, Meal, User } from "./api";
+import type { Action, HealthContext, Meal, MealAnalysis, User, UserPreferences } from "./api";
 
-function requireClient() {
-  if (!supabase) throw new Error("Supabase is not configured in this environment.");
-  return supabase;
-}
+function requireClient() { if (!supabase) throw new Error("Supabase is not configured in this environment."); return supabase; }
+function isSessionError(message: string) { return /jwt|token|session|auth|issued at future|expired/i.test(message); }
+async function withSession<T>(operation: (client: NonNullable<typeof supabase>) => Promise<T>): Promise<T> { const client = requireClient(); const healthySession = await getHealthySession(); if (!healthySession) throw new Error("Your session has expired. Please sign in again."); try { return await operation(client); } catch (firstError) { const message = firstError instanceof Error ? firstError.message : String(firstError); if (!isSessionError(message)) throw firstError; const refreshed = await refreshHealthySession(); if (!refreshed) throw new Error("Your session is no longer valid. Please sign in again."); try { return await operation(client); } catch (secondError) { const secondMessage = secondError instanceof Error ? secondError.message : String(secondError); if (isSessionError(secondMessage)) { await client.auth.signOut(); throw new Error("Your session is out of date. Please sign in again."); } throw secondError; } } }
 
-function isSessionError(message: string) {
-  return /jwt|token|session|auth|issued at future|expired/i.test(message);
-}
+function cleanList(value: unknown) { return Array.isArray(value) ? value.map(String).map((item) => item.trim()).filter(Boolean).slice(0, 12) : []; }
+export function normalizeHealthContext(value: unknown): HealthContext { const source = value && typeof value === "object" ? value as Record<string, unknown> : {}; return { conditions: cleanList(source.conditions), allergies: cleanList(source.allergies), notes: typeof source.notes === "string" ? source.notes.trim().slice(0, 600) : "" }; }
+export function normalizePreferences(value: unknown): UserPreferences { const source = value && typeof value === "object" ? value as Record<string, unknown> : {}; return { ...source, healthContext: normalizeHealthContext(source.healthContext) }; }
 
-async function withSession<T>(operation: (client: NonNullable<typeof supabase>) => Promise<T>): Promise<T> {
-  const client = requireClient();
-  const healthySession = await getHealthySession();
-  if (!healthySession) throw new Error("Your session has expired. Please sign in again.");
-  try {
-    return await operation(client);
-  } catch (firstError) {
-    const message = firstError instanceof Error ? firstError.message : String(firstError);
-    if (!isSessionError(message)) throw firstError;
-    const refreshed = await refreshHealthySession();
-    if (!refreshed) throw new Error("Your session is no longer valid. Please sign in again.");
-    try {
-      return await operation(client);
-    } catch (secondError) {
-      const secondMessage = secondError instanceof Error ? secondError.message : String(secondError);
-      if (isSessionError(secondMessage)) {
-        await client.auth.signOut();
-        throw new Error("Your session is out of date. Please sign in again.");
-      }
-      throw secondError;
-    }
-  }
-}
+function legacyDailyTasks(recommendations: string[]) { const dayLevel = recommendations.filter((item) => /water|walk|movement|break|sleep|plan|prepare|snack|stretch|habit|today/i.test(item) && !/add|remove|reduce|increase|choose|swap|portion|sauce|vegetable|salt|sugar|fibre|protein|meal|plate|food/i.test(item)); const tasks = [...dayLevel]; if (!tasks.some((item) => /water/i.test(item))) tasks.push("Drink a glass of water with your next meal"); if (!tasks.some((item) => /walk|movement|break/i.test(item))) tasks.push("Take a short movement break today"); return [...new Set(tasks)].slice(0, 4); }
+function mapAnalysis(row: any): MealAnalysis { const recommendations = cleanList(row?.recommendations); const mealGuidance = cleanList(row?.meal_guidance ?? row?.mealGuidance); const dailyTasks = cleanList(row?.daily_tasks ?? row?.dailyTasks); return { rating: row?.rating || "Reasonable", score: Number(row?.score || 0), indicators: (row?.indicators || {}) as Record<string, number>, explanation: row?.explanation || "", mealGuidance: mealGuidance.length ? mealGuidance : recommendations, dailyTasks: dailyTasks.length ? dailyTasks : legacyDailyTasks(recommendations), recommendations: recommendations.length ? recommendations : mealGuidance }; }
+function mapMeal(row: any, analysisRow: any): Meal { return { id: row.id, userId: row.user_id, imageUrl: row.image_url, mealName: row.meal_name, capturedAt: row.captured_at, status: row.status, analysis: mapAnalysis(analysisRow) }; }
+function profileFromRow(data: any, fallback: User): User { return { ...fallback, id: data.id, name: data.name || fallback.name, goals: cleanList(data.goals), preferences: normalizePreferences(data.preferences) }; }
 
-function mapMeal(row: any, analysisRow: any): Meal {
-  return { id: row.id, userId: row.user_id, imageUrl: row.image_url, mealName: row.meal_name, capturedAt: row.captured_at, status: row.status, analysis: { rating: analysisRow?.rating || "Reasonable", score: Number(analysisRow?.score || 0), indicators: (analysisRow?.indicators || {}) as Record<string, number>, explanation: analysisRow?.explanation || "", recommendations: Array.isArray(analysisRow?.recommendations) ? analysisRow.recommendations.map(String) : [] } };
-}
+export async function fetchProfile(userId: string, fallback: User): Promise<User> { return withSession(async (client) => { const { data, error } = await client.from("profiles").select("id,name,goals,preferences").eq("id", userId).maybeSingle(); if (error) throw new Error(`Could not load profile: ${error.message}`); if (!data) return fallback; return profileFromRow(data, fallback); }); }
+export async function updateProfile(userId: string, patch: { name?: string; goals?: string[]; preferences?: UserPreferences }, fallback: User): Promise<User> { return withSession(async (client) => { const nextPreferences = patch.preferences ? normalizePreferences(patch.preferences) : undefined; const payload = { id: userId, ...(patch.name === undefined ? {} : { name: patch.name }), ...(patch.goals === undefined ? {} : { goals: cleanList(patch.goals) }), ...(nextPreferences === undefined ? {} : { preferences: nextPreferences }) }; const { data, error } = await client.from("profiles").upsert(payload).select("id,name,goals,preferences").single(); if (error || !data) throw new Error(`Could not save profile: ${error?.message || "No profile was returned"}`); return profileFromRow(data, fallback); }); }
 
-export async function fetchProfile(userId: string, fallback: User): Promise<User> {
-  return withSession(async (client) => { const { data, error } = await client.from("profiles").select("id,name,goals,preferences").eq("id", userId).maybeSingle(); if (error) throw new Error(`Could not load profile: ${error.message}`); if (!data) return fallback; return { ...fallback, id: data.id, name: data.name || fallback.name, goals: Array.isArray(data.goals) ? data.goals : [], preferences: (data.preferences || {}) as Record<string, unknown> }; });
-}
-
-export async function updateProfile(userId: string, patch: { name?: string; goals?: string[]; preferences?: Record<string, unknown> }, fallback: User): Promise<User> {
-  return withSession(async (client) => { const { data, error } = await client.from("profiles").upsert({ id: userId, ...patch }).select("id,name,goals,preferences").single(); if (error || !data) throw new Error(`Could not save profile: ${error?.message || "No profile was returned"}`); return { ...fallback, id: data.id, name: data.name || fallback.name, goals: Array.isArray(data.goals) ? data.goals : [], preferences: (data.preferences || {}) as Record<string, unknown> }; });
-}
-
-export async function fetchMeals(userId: string): Promise<Meal[]> {
-  return withSession(async (client) => { const { data: rows, error } = await client.from("meals").select("id,user_id,image_url,meal_name,captured_at,status").eq("user_id", userId).order("captured_at", { ascending: false }).limit(50); if (error) throw new Error(`Could not load meals: ${error.message}`); const meals = rows || []; if (!meals.length) return []; const ids = meals.map((row) => row.id); const { data: analyses, error: analysisError } = await client.from("meal_analyses").select("meal_id,rating,score,indicators,explanation,recommendations").in("meal_id", ids); if (analysisError) throw new Error(`Could not load meal analyses: ${analysisError.message}`); const byMeal = new Map((analyses || []).map((row) => [row.meal_id, row])); return meals.map((row) => mapMeal(row, byMeal.get(row.id))); });
-}
-
-export async function fetchActions(userId: string): Promise<Action[]> {
-  return withSession(async (client) => { const { data, error } = await client.from("actions").select("id,user_id,meal_id,title,completed,created_at,completed_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(100); if (error) throw new Error(`Could not load actions: ${error.message}`); return (data || []).map((row) => ({ id: row.id, userId: row.user_id, mealId: row.meal_id, title: row.title, completed: Boolean(row.completed), createdAt: row.created_at, completedAt: row.completed_at })); });
-}
-
-export async function fetchSubscription(userId: string): Promise<{ plan: "free" | "pro"; status: string }> {
-  return withSession(async (client) => { const { data, error } = await client.from("subscriptions").select("plan,status").eq("user_id", userId).maybeSingle(); if (error) throw new Error(`Could not load subscription: ${error.message}`); return { plan: data?.plan === "pro" ? "pro" : "free", status: data?.status || "active" }; });
-}
-
-export async function createTask(userId: string, title: string, mealId?: string | null): Promise<Action> {
-  return withSession(async (client) => { const { data, error } = await client.from("actions").insert({ user_id: userId, meal_id: mealId || null, title, completed: false }).select("id,user_id,meal_id,title,completed,created_at,completed_at").single(); if (error || !data) throw new Error(`Could not add task: ${error?.message || "No task was returned"}`); return { id: data.id, userId: data.user_id, mealId: data.meal_id, title: data.title, completed: Boolean(data.completed), createdAt: data.created_at, completedAt: data.completed_at }; });
-}
-
-export async function completeTask(userId: string, actionId: string, completed: boolean): Promise<void> {
-  return withSession(async (client) => { const { data, error } = await client.from("actions").update({ completed, completed_at: completed ? new Date().toISOString() : null }).eq("id", actionId).eq("user_id", userId).select("id").maybeSingle(); if (error) throw new Error(`Could not update task: ${error.message}`); if (!data) throw new Error("That task could not be found in your account."); });
-}
-
-export async function saveMealResult(userId: string, meal: { imageUrl: string; mealName: string; capturedAt: string; analysis: { rating: string; score: number; indicators: Record<string, unknown>; explanation: string; recommendations: string[] } }): Promise<string> {
-  return withSession(async (client) => { const { data: savedMeal, error: mealError } = await client.from("meals").insert({ user_id: userId, image_url: meal.imageUrl, meal_name: meal.mealName, status: "analysed", captured_at: meal.capturedAt }).select("id").single(); if (mealError || !savedMeal) throw new Error(`Could not save meal: ${mealError?.message || "No meal was returned"}`); const { error: analysisError } = await client.from("meal_analyses").insert({ meal_id: savedMeal.id, rating: meal.analysis.rating, score: meal.analysis.score, indicators: meal.analysis.indicators, explanation: meal.analysis.explanation, recommendations: meal.analysis.recommendations }); if (analysisError) { await client.from("meals").delete().eq("id", savedMeal.id).eq("user_id", userId); throw new Error(`Could not save meal analysis: ${analysisError.message}`); } return savedMeal.id; });
-}
+export async function fetchMeals(userId: string): Promise<Meal[]> { return withSession(async (client) => { const { data: rows, error } = await client.from("meals").select("id,user_id,image_url,meal_name,captured_at,status").eq("user_id", userId).order("captured_at", { ascending: false }).limit(50); if (error) throw new Error(`Could not load meals: ${error.message}`); const meals = rows || []; if (!meals.length) return []; const ids = meals.map((row) => row.id); const { data: analyses, error: analysisError } = await client.from("meal_analyses").select("meal_id,rating,score,indicators,explanation,recommendations,meal_guidance,daily_tasks").in("meal_id", ids); if (analysisError) { const fallbackQuery = await client.from("meal_analyses").select("meal_id,rating,score,indicators,explanation,recommendations").in("meal_id", ids); if (fallbackQuery.error) throw new Error(`Could not load meal analyses: ${analysisError.message}`); return meals.map((row) => mapMeal(row, (fallbackQuery.data || []).find((item) => item.meal_id === row.id))); } const byMeal = new Map((analyses || []).map((row) => [row.meal_id, row])); return meals.map((row) => mapMeal(row, byMeal.get(row.id))); }); }
+export async function fetchActions(userId: string): Promise<Action[]> { return withSession(async (client) => { const { data, error } = await client.from("actions").select("id,user_id,meal_id,title,completed,created_at,completed_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(100); if (error) throw new Error(`Could not load actions: ${error.message}`); return (data || []).map((row) => ({ id: row.id, userId: row.user_id, mealId: row.meal_id, title: row.title, completed: Boolean(row.completed), createdAt: row.created_at, completedAt: row.completed_at })); }); }
+export async function fetchSubscription(userId: string): Promise<{ plan: "free" | "pro"; status: string }> { return withSession(async (client) => { const { data, error } = await client.from("subscriptions").select("plan,status").eq("user_id", userId).maybeSingle(); if (error) throw new Error(`Could not load subscription: ${error.message}`); return { plan: data?.plan === "pro" ? "pro" : "free", status: data?.status || "active" }; }); }
+export async function createTask(userId: string, title: string, mealId?: string | null): Promise<Action> { return withSession(async (client) => { const { data, error } = await client.from("actions").insert({ user_id: userId, meal_id: mealId || null, title, completed: false }).select("id,user_id,meal_id,title,completed,created_at,completed_at").single(); if (error || !data) throw new Error(`Could not add task: ${error?.message || "No task was returned"}`); return { id: data.id, userId: data.user_id, mealId: data.meal_id, title: data.title, completed: Boolean(data.completed), createdAt: data.created_at, completedAt: data.completed_at }; }); }
+export async function completeTask(userId: string, actionId: string, completed: boolean): Promise<void> { return withSession(async (client) => { const { data, error } = await client.from("actions").update({ completed, completed_at: completed ? new Date().toISOString() : null }).eq("id", actionId).eq("user_id", userId).select("id").maybeSingle(); if (error) throw new Error(`Could not update task: ${error.message}`); if (!data) throw new Error("That task could not be found in your account."); }); }
+export async function saveMealResult(userId: string, meal: { imageUrl: string; mealName: string; capturedAt: string; analysis: MealAnalysis }): Promise<string> { return withSession(async (client) => { const { data: savedMeal, error: mealError } = await client.from("meals").insert({ user_id: userId, image_url: meal.imageUrl, meal_name: meal.mealName, status: "analysed", captured_at: meal.capturedAt }).select("id").single(); if (mealError || !savedMeal) throw new Error(`Could not save meal: ${mealError?.message || "No meal was returned"}`); const analysisPayload = { meal_id: savedMeal.id, rating: meal.analysis.rating, score: meal.analysis.score, indicators: meal.analysis.indicators, explanation: meal.analysis.explanation, recommendations: meal.analysis.mealGuidance, meal_guidance: meal.analysis.mealGuidance, daily_tasks: meal.analysis.dailyTasks }; let { error: analysisError } = await client.from("meal_analyses").insert(analysisPayload); if (analysisError && /column|schema|meal_guidance|daily_tasks/i.test(analysisError.message)) { const fallback = await client.from("meal_analyses").insert({ meal_id: savedMeal.id, rating: meal.analysis.rating, score: meal.analysis.score, indicators: meal.analysis.indicators, explanation: meal.analysis.explanation, recommendations: meal.analysis.mealGuidance }); analysisError = fallback.error; } if (analysisError) { await client.from("meals").delete().eq("id", savedMeal.id).eq("user_id", userId); throw new Error(`Could not save meal analysis: ${analysisError.message}`); } return savedMeal.id; }); }

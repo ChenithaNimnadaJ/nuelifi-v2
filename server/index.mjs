@@ -31,10 +31,10 @@ async function scopedUser(req, id) {
   return userOrFail(id);
 }
 
-async function analyzeMeal(imageUrl, mealName) {
+async function analyzeMeal(imageUrl, mealName, context = {}) {
   const providers = [];
-  if (process.env.GROQ_API_KEY) providers.push(["groq", () => analyzeMealWithGroq({ imageUrl, mealName })]);
-  if (process.env.GEMINI_API_KEY) providers.push(["gemini", () => analyzeMealWithGemini({ imageUrl, mealName })]);
+  if (process.env.GROQ_API_KEY) providers.push(["groq", () => analyzeMealWithGroq({ imageUrl, mealName, context })]);
+  if (process.env.GEMINI_API_KEY) providers.push(["gemini", () => analyzeMealWithGemini({ imageUrl, mealName, context })]);
   let lastError;
   for (const [name, run] of providers) {
     try { const analysis = await run(); if (analysis) return { analysis, provider: name }; } catch (error) { lastError = error; console.warn(`${name} meal analysis unavailable: ${error.message}`); }
@@ -82,12 +82,13 @@ function mealAssessment(input = {}) {
       vegetables, fibre: Number(input.fibre ?? 6), sugar, portionBalance: portion,
     },
     explanation: rating === "Excellent" ? "A balanced meal with a strong mix of food groups." : "This meal has a good foundation and one or two practical opportunities to improve.",
-    recommendations: [
-      ...(vegetables < 3 ? ["Add vegetables to your next meal"] : []),
-      ...(portion < 3 ? ["Keep the carbohydrate portion moderate"] : []),
-      ...(sugar > 2 ? ["Choose a lower-sugar option"] : []),
-      "Take a short walk after eating",
-    ],
+    mealGuidance: [
+      ...(vegetables < 3 ? ["Add vegetables to your next similar meal"] : []),
+      ...(portion < 3 ? ["Keep the carbohydrate portion moderate in a future meal"] : []),
+      ...(sugar > 2 ? ["Choose a lower-sugar option next time"] : []),
+      "Keep a balanced mix of food groups in your next meal.",
+    ].slice(0, 4),
+    dailyTasks: ["Take a short movement break today", "Drink a glass of water with your next meal"],
   };
 }
 function dashboard(userId) {
@@ -122,7 +123,7 @@ async function route(req, res) {
       const input = await body(req); required(input.imageUrl, "imageUrl");
       const tokenUser = await authUser(req);
       if (tokenUser && input.userId && tokenUser.id !== input.userId) return fail(res, 403, "You cannot analyze for another user");
-      const result = await analyzeMeal(input.imageUrl, input.mealName || "Meal");
+      const result = await analyzeMeal(input.imageUrl, input.mealName || "Meal", input.context || {});
       return send(res, 200, { id: `analysis-${Date.now()}`, userId: tokenUser?.id || input.userId || "", imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis: result.analysis, provider: result.provider });
     }
     if (parts[1] === "users") {
@@ -138,7 +139,7 @@ async function route(req, res) {
         const input = await body(req); required(input.imageUrl, "imageUrl");
         let analysis = mealAssessment(input.analysis);
         if (!input.analysis && (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY)) {
-          try { analysis = (await analyzeMeal(input.imageUrl, input.mealName || "Meal")).analysis || analysis; }
+          try { analysis = (await analyzeMeal(input.imageUrl, input.mealName || "Meal", input.context || {})).analysis || analysis; }
           catch (error) { console.warn(`AI unavailable; using local assessment: ${error.message}`); }
         }
         const meal = { id: randomUUID(), userId: user.id, imageUrl: input.imageUrl, mealName: input.mealName || "Meal", capturedAt: now(), status: "analysed", analysis };
