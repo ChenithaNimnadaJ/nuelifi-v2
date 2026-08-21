@@ -25,3 +25,33 @@ Supabase Auth URL Configuration is now persisted with Site URL `https://nuelifi.
 Supabase provider settings showed Email enabled and Google enabled. The provider page then reported that the dashboard session had expired, so the exact Google Cloud Console callback URI could not be inspected further without a renewed Supabase dashboard sign-in.
 
 Supabase provider verification: Email is enabled and Google is enabled. The Google provider panel displays the OAuth callback URL `https://mtfqktpfcwoigmpmdkwh.supabase.co/auth/v1/callback`. The configured Google client ID and secret are present; credential values are not recorded in the repository notes.
+
+## UI refactor browser tests
+
+The local build rendered the auth screen at the default browser viewport and entered preview mode only through the explicit preview link. Preview navigation reached Profile successfully. The Profile screen now exposes an Appearance select with System, Light, and Dark options; selecting Dark updated the page background, navigation rail, surfaces, borders, and text to the dark palette without breaking the controls.
+
+Responsive screenshot checks: at 390x844 the auth card fits without horizontal clipping, controls remain touch-sized, and body text wraps cleanly. At 768x1024 the card scales to a comfortable readable width and remains vertically centered with consistent spacing.
+
+The updated auth screen exposes a pre-auth Appearance theme selector and retained the dark theme from localStorage after hot reload. Preview mode still clearly labels demo data. The dashboard reached Analyse through the sidebar, and the capture screen exposed camera/upload inputs plus three example buttons with accessible labels.
+
+During local hot-reload testing, changing source reset the in-memory preview state back to the auth screen; this is expected development behavior, not a persisted-user failure. The auth screen remained interactive after the reset.
+
+After rebuilding, the app repeatedly re-entered preview mode cleanly and navigated to the dark Analyse screen. The Analyse surface continued to show accessible camera/upload labels and sample buttons without layout errors.
+
+A repeated sample-button click encountered a stale browser element index because Vite hot reload had reset the in-memory preview state to auth. Refreshing the element map confirmed the auth screen was healthy; no production runtime error was observed.
+
+The protected preview behavior is now explicit: the Analyse screen displays “Preview mode uses sample data. Sign in to analyse and save your own meals.” This prevents an anonymous `/api/analyze` call and aligns the UI with `REQUIRE_AUTH=true`.
+
+The browser automation again returned to auth when a cached sample-button index was used after Vite refreshed. This was a test harness/index-staleness issue in the local hot-reload session, not an application error; the app remained reachable and the protected-preview messaging was visible on the prior fresh Analyse render.
+
+A DOM-based test entered preview mode successfully after cached browser indexes proved unreliable during Vite hot reload. The dashboard mounted with the preview banner and five navigation destinations. One malformed console expression was rejected by the browser evaluator and was corrected immediately; it did not affect the app.
+
+A DOM navigation test ran after another Vite refresh and found no mounted navigation buttons because the app had reset to its auth gate. A fresh browser view confirmed the auth screen was healthy and retained the theme selector. This is a local hot-reload state-reset limitation, not an auth or UI rendering regression.
+
+Refreshed screenshot results after the final UI changes: 390x844 mobile shows the theme selector, form, buttons, and preview link fitting without clipping; 768x1024 tablet scales the auth card and type comfortably while retaining balanced whitespace.
+
+The refreshed 1440x1000 wide screenshot keeps the auth card centered and proportionate with generous whitespace; the theme selector remains aligned in the card header. Live Worker backend smoke checks returned `/health` HTTP 200, unauthenticated `/api/analyze` HTTP 401, and CORS OPTIONS HTTP 204 with the expected allowed origin, headers, and method.
+
+## Production UI verification
+
+The live Worker at `https://nuelifi.chenithanimnadaj.workers.dev/` rendered the updated auth screen with the Appearance theme selector. Selecting Dark mode in the production browser successfully updated the background, card, and text colors to the dark palette. The responsive layout remained centered and proportionate. The JavaScript bundle confirmed the presence of the new protected-preview handoff logic.
