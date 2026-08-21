@@ -19,7 +19,7 @@ The final full Cloudflare Worker and static-asset deployment was accepted succes
 | Frontend JavaScript | `index-C754ou1h.js` |
 | Frontend CSS | `index-6l0zo_MC.css` |
 | Repository | `ChenithaNimnadaJ/nuelifi-v2` |
-| Latest commit | `6a77174` — Record final production smoke checks |
+| Latest commit | `74844ab` — Add final release and test report |
 | Branch | `main` |
 
 The repository is clean after the final commit and the changes were pushed to GitHub.
