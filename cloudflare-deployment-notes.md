@@ -24,3 +24,11 @@ The production frontend build was generated with `VITE_API_URL=https://nuelifi.c
 ## Responsive UI release
 
 The fluid responsive, semantic dark-mode, pre-auth theme selector, and protected preview handoff release was deployed successfully as Worker deployment `c1d4304469714db68f676c914e3bdff0` on 2026-08-21T16:20:11Z. The live asset bundle is `index-B5lYCr3I.js` and `index-DxTLXHiC.css`; the live Worker URL remains `https://nuelifi.chenithanimnadaj.workers.dev/`.
+
+## Blank-dashboard and AI route fix — 2026-08-21
+
+The production diagnosis found that the stale frontend bundle was calling `http://localhost:8787/api/analyze`, causing authenticated meal analysis to wait until the 60-second client timeout. The frontend was rebuilt with `VITE_API_URL=https://nuelifi.chenithanimnadaj.workers.dev` and redeployed together with the Worker’s bounded AI-provider timeout and corrected Gemini fallback handling.
+
+Final full Worker + asset deployment: `db045db0ffbc469c85284e9085e4d187`.
+
+The canonical live URL remains `https://nuelifi.chenithanimnadaj.workers.dev/`.
