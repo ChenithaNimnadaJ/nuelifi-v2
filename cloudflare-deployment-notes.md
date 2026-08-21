@@ -12,7 +12,7 @@ Production env vars configured on the Pages project include VITE_SUPABASE_URL, V
 
 ## Final deployment outcome
 
-The working production deployment is the standalone Cloudflare Worker at `https://nuelifi.chenithanimnadaj.workers.dev/`. Worker deployment `77e706be6ec14cbc9170025b2a439146` was accepted at 2026-08-21T15:05:25Z with `has_assets: true`; the Worker subdomain was enabled at the account’s existing `chenithanimnadaj.workers.dev` subdomain.
+The working production deployment is the standalone Cloudflare Worker at `https://nuelifi.chenithanimnadaj.workers.dev/`. Worker deployment `1e4e3529efc44f32b3bbbc68d31cb903` was accepted at 2026-08-21T15:10:32Z with `has_assets: true`; the Worker subdomain was enabled at the account’s existing `chenithanimnadaj.workers.dev` subdomain.
 
 The Worker serves the Nuelifi frontend and `/health`, `/api/analyze`, and CORS preflight routes. Server-side Worker secrets were configured for Supabase authentication, Groq, Gemini, and `REQUIRE_AUTH=true`. The unauthenticated analysis check returns HTTP 401, and CORS preflight returns HTTP 204.
 
