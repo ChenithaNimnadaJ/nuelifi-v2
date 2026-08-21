@@ -268,3 +268,35 @@ body { min-height: 100dvh; overflow-x: hidden; }
 .button-google { align-items: center; background: #fff; border: 1px solid #dce4de; color: #26322a; display: flex; gap: 10px; justify-content: center; width: 100%; }
 .button-google:hover { background: #f7faf7; border-color: #b9cbbb; }
 .google-glyph { align-items: center; color: #4285f4; display: inline-flex; font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; justify-content: center; }
+
+/* Onboarding */
+.onboarding-screen { background: #fafcfa; min-height: 100dvh; margin: 0 auto; max-width: 620px; padding: 24px 20px 34px; }
+.onboarding-progress { background: #e7eee8; border-radius: 99px; height: 6px; margin: 3px 0 38px; overflow: hidden; }
+.onboarding-progress span { background: #27a968; border-radius: inherit; display: block; height: 100%; transition: width .24s ease; }
+.onboarding-screen h1 { font-size: 30px; max-width: 430px; }
+.onboarding-subtitle { color: #718078; font-size: 14px; line-height: 1.6; margin: 12px 0 26px; max-width: 450px; }
+.onboarding-field { margin-top: 12px; max-width: 460px; }
+.choice-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 520px; }
+.choice-chip { background: #fff; border: 1px solid #dfe8e1; border-radius: 13px; color: #435148; cursor: pointer; font-size: 12px; min-height: 58px; padding: 12px; text-align: left; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
+.choice-chip:hover { border-color: #91c9a6; transform: translateY(-1px); }
+.choice-chip.selected { background: #e6f6eb; border-color: #64bc83; color: #176d42; font-weight: 600; }
+.onboarding-selects { max-width: 460px; }
+.onboarding-field select { background: #fbfcfb; border: 1px solid #dfe7e1; border-radius: 11px; box-sizing: border-box; color: #26332b; font: inherit; font-size: 13px; outline: none; padding: 12px 13px; width: 100%; }
+.onboarding-field select:focus { border-color: #48b979; box-shadow: 0 0 0 3px rgba(72,185,121,.12); }
+.onboarding-actions { display: flex; gap: 10px; margin-top: 32px; max-width: 460px; }
+.onboarding-actions .button { flex: 1; }
+.onboarding-footnote { color: #89958d; display: block; font-size: 11px; margin-top: 22px; }
+@media (max-width: 390px) { .choice-grid { grid-template-columns: 1fr; } .onboarding-screen h1 { font-size: 27px; } }
+@media (min-width: 720px) { .onboarding-screen { padding: 64px 48px; } }
+
+.profile-section-heading, .profile-edit-heading { align-items: center; display: flex; justify-content: space-between; gap: 12px; }
+.profile-edit-card { max-width: 720px; }
+.profile-edit-heading { margin-bottom: 4px; }
+.edit-goals { margin-top: 20px; }
+.edit-label { color: #56635a; display: block; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+.edit-goals .goal-tags button { background: #e6f6eb; border: 0; border-radius: 7px; color: #176d42; cursor: pointer; font-size: 11px; padding: 8px 9px; }
+.goal-add-row { display: flex; gap: 8px; margin-top: 12px; }
+.goal-add-row input { background: #fbfcfb; border: 1px solid #dfe7e1; border-radius: 11px; box-sizing: border-box; color: #26332b; font: inherit; font-size: 12px; min-width: 0; padding: 11px 12px; width: 100%; }
+.goal-add-row input:focus { border-color: #48b979; box-shadow: 0 0 0 3px rgba(72,185,121,.12); outline: none; }
+.goal-add-row .button { flex: 0 0 auto; padding: 10px 14px; }
+.profile-edit-card > .button { margin-top: 22px; width: 100%; }

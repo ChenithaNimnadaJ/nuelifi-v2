@@ -1,4 +1,4 @@
-import { refreshHealthySession, supabase } from "./supabase";
+import { getHealthySession, refreshHealthySession, supabase } from "./supabase";
 import type { Action, Meal, User } from "./api";
 
 function requireClient() {
@@ -12,9 +12,8 @@ function isSessionError(message: string) {
 
 async function withSession<T>(operation: (client: NonNullable<typeof supabase>) => Promise<T>): Promise<T> {
   const client = requireClient();
-  const current = await client.auth.getSession();
-  if (current.error) throw new Error(`Could not restore your session: ${current.error.message}`);
-  if (!current.data.session) throw new Error("Your session has expired. Please sign in again.");
+  const healthySession = await getHealthySession();
+  if (!healthySession) throw new Error("Your session has expired. Please sign in again.");
   try {
     return await operation(client);
   } catch (firstError) {
@@ -64,7 +63,7 @@ export async function createTask(userId: string, title: string, mealId?: string 
 }
 
 export async function completeTask(userId: string, actionId: string, completed: boolean): Promise<void> {
-  return withSession(async (client) => { const { error } = await client.from("actions").update({ completed, completed_at: completed ? new Date().toISOString() : null }).eq("id", actionId).eq("user_id", userId); if (error) throw new Error(`Could not update task: ${error.message}`); });
+  return withSession(async (client) => { const { data, error } = await client.from("actions").update({ completed, completed_at: completed ? new Date().toISOString() : null }).eq("id", actionId).eq("user_id", userId).select("id").maybeSingle(); if (error) throw new Error(`Could not update task: ${error.message}`); if (!data) throw new Error("That task could not be found in your account."); });
 }
 
 export async function saveMealResult(userId: string, meal: { imageUrl: string; mealName: string; capturedAt: string; analysis: { rating: string; score: number; indicators: Record<string, unknown>; explanation: string; recommendations: string[] } }): Promise<string> {
