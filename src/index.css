@@ -780,3 +780,36 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 @media (max-width:680px){.home-tool-links{grid-template-columns:1fr}.history-detail-hero{grid-template-columns:100px 1fr;gap:14px}.history-detail-hero h1{font-size:23px}.history-metric-grid{grid-template-columns:repeat(2,1fr)}.leaderboard-header{display:block}.leaderboard-lock{display:inline-block;margin-top:12px}.referral-link-card{align-items:stretch;flex-direction:column}.referral-stat-grid,.referral-earnings{grid-template-columns:1fr}.referral-earnings>div{border-bottom:1px solid var(--border)}.onboarding-two-column{grid-template-columns:1fr}.podium-card{padding-inline:5px}.podium-card strong{font-size:11px}}
 
 .privacy-card{align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);display:flex;gap:16px;justify-content:space-between;margin:16px 0;padding:16px 18px}.privacy-card h3{margin:0 0 5px}.privacy-card p{color:var(--muted);font-size:12px;line-height:1.5;margin:0;max-width:620px}.privacy-card .switch{flex:0 0 auto}
+
+/* Data-honest product preview: mirrors the app shell without presenting fabricated activity as a screenshot. */
+.public-site .preview-live-card { background: var(--surface-raised); border: 1px solid var(--border); box-shadow: 0 34px 110px rgba(15, 55, 28, .16); overflow: visible; padding: 0; transform: rotate(.6deg); }
+.public-site .preview-live-header { align-items: center; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: 28px 28px 0 0; display: flex; justify-content: space-between; min-height: 58px; padding: 0 clamp(18px, 3vw, 28px); }
+.public-site .preview-live-brand { align-items: center; color: var(--text-strong); display: flex; font-family: Geist, Inter, sans-serif; font-size: 13px; font-weight: 750; gap: 8px; letter-spacing: -.03em; }
+.public-site .preview-live-brand .preview-mini-logo { color: var(--brand-strong); height: 21px; width: 23px; }
+.public-site .preview-live-status { align-items: center; color: var(--muted); display: flex; font-size: 9px; gap: 6px; }
+.public-site .preview-live-status i { background: var(--brand); border-radius: 50%; display: block; height: 6px; width: 6px; }
+.public-site .preview-live-body { display: grid; grid-template-columns: 42px minmax(0, 1fr); min-height: 500px; }
+.public-site .preview-live-rail { align-items: center; background: var(--hero); border-radius: 0 0 0 28px; display: flex; flex-direction: column; gap: 20px; padding-top: 25px; }
+.public-site .preview-live-rail i { background: color-mix(in srgb, var(--hero-text) 22%, transparent); border-radius: 5px; display: block; height: 9px; width: 12px; }
+.public-site .preview-live-rail i.active { background: var(--brand); box-shadow: 0 0 0 5px color-mix(in srgb, var(--brand) 18%, transparent); }
+.public-site .preview-live-content { background: var(--surface-raised); min-width: 0; padding: clamp(22px, 4vw, 40px) clamp(20px, 4vw, 48px); }
+.public-site .preview-live-top { align-items: center; color: var(--faint); display: flex; font-size: 8px; font-weight: 750; justify-content: space-between; letter-spacing: .14em; }
+.public-site .preview-live-top span:last-child { color: var(--brand-strong); font-size: 8px; letter-spacing: 0; }
+.public-site .preview-live-greeting { margin: clamp(34px, 6vw, 58px) 0 23px; max-width: 430px; }
+.public-site .preview-live-greeting small { color: var(--brand-strong); display: block; font-size: 8px; font-weight: 800; letter-spacing: .14em; }
+.public-site .preview-live-greeting strong { color: var(--text-strong); display: block; font-family: Geist, Inter, sans-serif; font-size: clamp(23px, 3vw, 35px); letter-spacing: -.065em; line-height: 1.02; margin-top: 12px; }
+.public-site .preview-live-greeting p { color: var(--muted); font-size: 11px; line-height: 1.55; margin: 12px 0 0; max-width: 350px; }
+.public-site .preview-live-empty-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.public-site .preview-live-empty-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; min-height: 112px; padding: 16px; }
+.public-site .preview-live-empty-card small { color: var(--faint); font-size: 8px; font-weight: 800; letter-spacing: .1em; }
+.public-site .preview-live-empty-card strong { color: var(--text-strong); font-family: Geist, Inter, sans-serif; font-size: 32px; letter-spacing: -.08em; line-height: 1; margin-top: auto; }
+.public-site .preview-live-empty-card span { color: var(--muted); font-size: 9px; margin-top: 6px; }
+.public-site .preview-live-capture { align-items: center; background: var(--hero); border-radius: 15px; color: var(--hero-text); display: flex; gap: 11px; margin-top: 12px; padding: 15px 16px; }
+.public-site .preview-live-capture-icon { align-items: center; background: var(--brand); border-radius: 10px; color: #fff; display: flex; flex: 0 0 32px; font-size: 21px; height: 32px; justify-content: center; }
+.public-site .preview-live-capture span:nth-child(2) { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.public-site .preview-live-capture strong { font-size: 11px; }
+.public-site .preview-live-capture small { color: var(--hero-muted); font-size: 9px; }
+.public-site .preview-live-capture b { color: var(--hero-text); font-size: 17px; }
+.public-site .preview-live-foot { align-items: center; border-top: 1px solid var(--border); color: var(--muted); display: flex; font-size: 9px; gap: 15px; margin-top: 22px; padding-top: 15px; }
+.public-site .preview-live-foot em { color: var(--brand-strong); font-style: normal; margin-left: auto; }
+@media (max-width: 620px) { .public-site .preview-live-header { border-radius: 20px 20px 0 0; min-height: 51px; padding-inline: 15px; } .public-site .preview-live-status { font-size: 8px; } .public-site .preview-live-body { min-height: 430px; } .public-site .preview-live-rail { border-radius: 0 0 0 20px; gap: 17px; padding-top: 20px; } .public-site .preview-live-content { padding: 20px 15px 22px; } .public-site .preview-live-greeting { margin: 32px 0 17px; } .public-site .preview-live-greeting strong { font-size: 24px; } .public-site .preview-live-empty-card { min-height: 94px; padding: 12px; } .public-site .preview-live-empty-card strong { font-size: 27px; } .public-site .preview-live-foot { gap: 9px; font-size: 8px; } }
