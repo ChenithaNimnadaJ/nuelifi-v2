@@ -1,6 +1,6 @@
 {
-  "title": "Neulifi — Your everyday health companion",
-  "description": "Neulifi turns meal photos into calm, practical next steps for everyday health.",
+  "title": "Neulifi — AI Meal & Nutrition Scanner",
+  "description": "Neulifi helps you understand your meals, make practical next choices, and notice food, movement, and lifestyle patterns over time.",
   "language": "en",
-  "robots": { "index": false }
+  "robots": { "index": true }
 }
