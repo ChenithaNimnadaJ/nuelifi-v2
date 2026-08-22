@@ -697,3 +697,53 @@ h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 @media (prefers-color-scheme: dark) {
   [data-theme="system"] .public-site { --public-paper: var(--bg); --public-line: var(--border); }
 }
+
+
+/* Feature gallery: neutral, product-faithful mini states rather than fake user screenshots. */
+.feature-gallery { border-top: 1px solid var(--border); padding: clamp(78px, 11vw, 138px) 0 0; }
+.feature-gallery-heading { margin-bottom: 42px; }
+.feature-gallery-heading h2 { color: var(--text-strong); font-family: Geist, Inter, sans-serif; font-size: clamp(32px, 4.6vw, 58px); letter-spacing: -.075em; line-height: 1; margin: 19px 0 13px; }
+.feature-gallery-heading p { color: var(--muted); font-size: 14px; line-height: 1.65; margin: 0; }
+.feature-gallery-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.feature-frame { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-soft); overflow: hidden; }
+.feature-frame-top { align-items: center; background: var(--surface-soft); border-bottom: 1px solid var(--border); display: flex; gap: 5px; height: 31px; padding: 0 12px; }
+.feature-frame-dot { background: var(--border-strong); border-radius: 50%; height: 5px; width: 5px; }
+.feature-frame-top small { color: var(--faint); font-size: 8px; margin-left: auto; }
+.feature-frame-body { display: grid; grid-template-columns: 34px minmax(0, 1fr); min-height: 274px; }
+.feature-frame-rail { align-items: center; background: var(--hero); display: flex; flex-direction: column; gap: 18px; padding-top: 16px; }
+.feature-frame-rail i { background: color-mix(in srgb, var(--hero-text) 24%, transparent); border-radius: 3px; height: 7px; width: 10px; }
+.feature-frame-logo { color: var(--brand); height: 16px; width: 18px; }
+.feature-frame-content { background: var(--surface-raised); min-width: 0; padding: 19px 16px; }
+.feature-frame-kicker { color: var(--faint); display: block; font-size: 7px; font-weight: 700; letter-spacing: .14em; }
+.feature-frame-content h3 { color: var(--text-strong); font-family: Geist, Inter, sans-serif; font-size: clamp(16px, 2vw, 22px); letter-spacing: -.055em; margin: 12px 0 16px; }
+.feature-frame-balance { background: var(--hero); border-radius: 10px; color: var(--hero-text); display: flex; flex-direction: column; gap: 4px; padding: 13px; }
+.feature-frame-balance small { color: var(--hero-muted); font-size: 7px; font-weight: 700; letter-spacing: .12em; }
+.feature-frame-balance strong { color: var(--hero-text); font-family: Geist, Inter, sans-serif; font-size: 32px; letter-spacing: -.08em; line-height: .9; margin-top: 12px; }
+.feature-frame-balance span { color: var(--hero-muted); font-size: 8px; }
+.feature-frame-row { display: grid; gap: 5px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 8px; }
+.feature-frame-row b { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--faint); font-size: 6px; padding: 10px 4px; text-align: center; }
+.feature-frame-upload { align-items: center; background: var(--surface-soft); border: 1px dashed var(--border-strong); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; min-height: 145px; text-align: center; }
+.feature-frame-upload span { align-items: center; background: var(--brand); border-radius: 8px; color: #fff; display: flex; font-size: 19px; height: 31px; justify-content: center; margin-bottom: 12px; width: 31px; }
+.feature-frame-upload strong { color: var(--text-strong); font-family: Geist, Inter, sans-serif; font-size: 12px; letter-spacing: -.035em; }
+.feature-frame-upload small { color: var(--muted); font-size: 8px; margin-top: 7px; }
+.feature-frame-actions { display: grid; gap: 6px; grid-template-columns: repeat(2, 1fr); margin-top: 8px; }
+.feature-frame-actions span { background: var(--hero); border-radius: 6px; color: var(--hero-text); font-size: 8px; padding: 8px; text-align: center; }
+.feature-frame-actions span + span { background: var(--surface-soft); border: 1px solid var(--border); color: var(--text); }
+.feature-frame-chart { align-items: end; border-bottom: 1px solid var(--border-strong); display: flex; gap: 8px; height: 128px; margin-top: 5px; padding: 0 7px; }
+.feature-frame-chart i { background: color-mix(in srgb, var(--brand-strong) 42%, var(--surface-soft)); border-radius: 4px 4px 0 0; display: block; flex: 1; height: 35%; }
+.feature-frame-chart i:nth-child(2) { height: 47%; } .feature-frame-chart i:nth-child(3) { height: 39%; } .feature-frame-chart i:nth-child(4) { height: 61%; } .feature-frame-chart i:nth-child(5) { height: 54%; } .feature-frame-chart i:nth-child(6) { background: var(--brand); height: 78%; }
+.feature-frame-insight-row { align-items: center; background: var(--surface-soft); border-radius: 8px; display: flex; justify-content: space-between; margin-top: 10px; padding: 10px; }
+.feature-frame-insight-row span { color: var(--muted); font-size: 8px; } .feature-frame-insight-row strong { color: var(--brand-strong); font-size: 8px; }
+.feature-frame-caption { align-items: center; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: space-between; padding: 14px 16px 16px; }
+.feature-frame-caption strong { color: var(--text-strong); font-size: 11px; font-weight: 600; line-height: 1.4; }
+.feature-frame-caption span { color: var(--brand-strong); font-size: 16px; }
+@media (max-width: 900px) { .feature-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .feature-frame:last-child { grid-column: 1 / -1; justify-self: center; max-width: 420px; width: 100%; } }
+@media (max-width: 620px) { .feature-gallery-grid { grid-template-columns: 1fr; } .feature-frame:last-child { grid-column: auto; max-width: none; } }
+
+
+/* Inline vector logo visibility: render the actual SVG path and inherit a deliberate brand color. */
+svg.brand-logo, svg.preview-mini-logo, svg.auth-icon-logo, svg.feature-frame-logo { background: none; -webkit-mask-image: none; mask-image: none; }
+svg.brand-logo { color: var(--brand-strong); }
+.brand .brand-logo, .auth-brand .brand-logo, .desktop-rail-brand .brand-logo, .public-brand .brand-logo { color: var(--brand-strong); }
+svg.preview-mini-logo { color: var(--brand); }
+svg.auth-icon-logo { color: var(--brand-strong); }
