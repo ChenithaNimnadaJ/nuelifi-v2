@@ -23,5 +23,5 @@ export function hasCapability(plan: unknown, capability: string): boolean {
 
 export function usageLabel(plan: unknown): string {
   const current = getPlan(plan);
-  return `${current.aiUsageLimit} analyses / month`;
+  return `${current.aiUsageLimit} analyses / day`;
 }

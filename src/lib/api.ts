@@ -43,5 +43,6 @@ export const nuelifiApi = {
   completeAction: (actionId: string, completed = true) => request<Action>(`/api/actions/${actionId}`, { method: "PATCH", body: JSON.stringify({ completed }) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),
   subscription: (userId: string) => request(`/api/users/${userId}/subscription`),
-  usage: () => request<UsageSnapshot>("/api/usage"),
+  usage: async () => { const payload = await request<{ plan: PlanId; status: string; used: number; usage_limit: number; analysis_level: AnalysisLevel }>("/api/usage"); return { plan: payload.plan, status: payload.status, used: payload.used, usageLimit: payload.usage_limit, analysisLevel: payload.analysis_level } as UsageSnapshot; },
+  checkout: (plan: "pro" | "premium") => request<{ url: string }>("/api/checkout", { method: "POST", body: JSON.stringify({ plan }) }),
 };
