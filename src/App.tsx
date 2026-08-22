@@ -6,6 +6,7 @@ import { AuthScreen } from "./components/AuthScreen";
 import { Onboarding, type OnboardingValues } from "./components/Onboarding";
 import { PublicSite } from "./components/PublicSite";
 import { Welcome } from "./components/Welcome";
+import { PaddleCheckoutLink } from "./components/PaddleCheckoutLink";
 import { UpgradeModal } from "./components/UpgradeModal";
 import { BrandMark } from "./components/BrandMark";
 import { getHealthySession, supabase } from "./lib/supabase";
@@ -132,6 +133,7 @@ export default function App() {
   const enterPreview = () => { setPreviewMode(true); setScreen("home"); setAuthMode(null); window.history.replaceState(null, "", "/app"); };
   if (!authReady) return <div className="auth-loading">Loading your private Neulifi space…</div>;
   if (!previewMode && window.location.pathname === "/welcome") return <Welcome signedIn={Boolean(sessionUser)} onContinue={enterAuthenticatedApp} onSignUp={() => navigateAuth("signup", "/welcome")}/>;
+  if (!previewMode && window.location.pathname === "/checkout") return <PaddleCheckoutLink/>;
   if (!previewMode && publicPageFromPath(window.location.pathname)) return <PublicSite page={publicPage} onNavigate={navigatePublic} onAuth={navigateAuth} onPreview={enterPreview}/>;
   if (supabase && !sessionUser && !previewMode) { if (authMode || window.location.pathname === "/app") return <AuthScreen initialMode={authMode || "signin"} themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={completeAuthRedirect} onPreview={enterPreview}/>; return <PublicSite page={publicPage} onNavigate={navigatePublic} onAuth={navigateAuth} onPreview={enterPreview}/>; }
   if (supabase && sessionUser && dataState === "loading" && !previewMode) return <div className="auth-loading">Loading your private Neulifi space…</div>;

@@ -956,3 +956,9 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .paddle-billing-controls-annual .paddle-annual-badge { padding: .2rem .55rem; border-radius: 999px; background: var(--brand-soft, #e3f1e7); color: var(--brand-strong, #21844a); font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .paddle-billing-controls-annual strong { color: var(--text-strong, #18221d); font-size: .82rem; }
 .paddle-billing-controls-annual small { flex-basis: 100%; color: var(--text-muted, #66736c); font-size: .72rem; }
+
+.checkout-link-page { align-items: center; display: grid; min-height: 100dvh; padding: 24px; }
+.checkout-link-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); margin: 0 auto; max-width: 560px; padding: clamp(28px, 6vw, 56px); text-align: center; width: 100%; }
+.checkout-link-card h1 { margin: 12px 0 14px; }
+.checkout-link-card p { color: var(--muted); line-height: 1.7; margin: 0 auto 24px; max-width: 420px; }
+.checkout-link-card .button { display: inline-flex; }
