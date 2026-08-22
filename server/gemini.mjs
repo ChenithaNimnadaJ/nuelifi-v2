@@ -1,7 +1,7 @@
 import { analysisSchema, buildMealPrompt, normalizeMealAnalysis } from "./normalize.mjs";
 
-const primaryModel = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
-const fallbackModels = (process.env.GEMINI_FALLBACK_MODELS || "gemini-3.7-flash,gemini-3.5-flash,gemini-2.5-flash").split(",").map((value) => value.trim()).filter(Boolean);
+const primaryModel = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+const fallbackModels = (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash-lite,gemini-3.7-flash,gemini-3.5-flash,gemini-2.5-flash").split(",").map((value) => value.trim()).filter(Boolean);
 
 async function imagePart(imageUrl) { if (imageUrl.startsWith("data:")) { const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/); if (!match) throw new Error("Invalid data URL"); return { inline_data: { mime_type: match[1], data: match[2] } }; } const response = await fetch(imageUrl, { signal: AbortSignal.timeout(15000) }); if (!response.ok) throw new Error(`Meal image could not be fetched (${response.status})`); const mimeType = response.headers.get("content-type")?.split(";")[0] || "image/jpeg"; const data = Buffer.from(await response.arrayBuffer()).toString("base64"); return { inline_data: { mime_type: mimeType, data } }; }
 function requestBody(image, mealName, context, analysisLevel = "basic") { return { contents: [{ role: "user", parts: [image, { text: buildMealPrompt(mealName, context, analysisLevel) }] }], systemInstruction: { parts: [{ text: "You are Neulifi, a calm food and lifestyle companion. Convert visual observations into understandable, cautious, actionable feedback. Never diagnose or prescribe. Keep mealGuidance separate from dailyTasks." }] }, generationConfig: { temperature: 0.2, responseMimeType: "application/json", responseSchema: analysisSchema() } }; }
