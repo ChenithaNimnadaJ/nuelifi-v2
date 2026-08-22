@@ -11,7 +11,7 @@ export function AuthScreen({ onPreview, themeMode, onThemeChange, initialMode = 
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const redirectTo = import.meta.env.VITE_AUTH_REDIRECT_URL || new URL("/app", window.location.origin).toString();
+  const redirectTo = new URL("/", window.location.origin).toString();
   const chooseTheme = async (nextMode: ThemeMode) => { try { await onThemeChange(nextMode); } catch (value) { setMessage(value instanceof Error ? value.message : "Could not save your appearance preference."); } };
 
   const signInWithGoogle = async () => {

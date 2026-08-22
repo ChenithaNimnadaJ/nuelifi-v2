@@ -824,3 +824,17 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .public-site .screenshot-product-preview figcaption span { color: var(--brand-strong); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .public-site .screenshot-product-preview figcaption strong { color: var(--text-strong); font-family: Geist, Inter, sans-serif; font-size: 12px; letter-spacing: -.025em; text-align: right; }
 @media (max-width: 620px) { .public-site .screenshot-product-preview { border-radius: 20px; transform: none; } .public-site .screenshot-preview-label { gap: 6px; left: 10px; padding: 7px 8px; top: 10px; } .public-site .screenshot-preview-label span { font-size: 7px; } .public-site .screenshot-preview-label small { display: none; } .public-site .screenshot-product-preview figcaption { align-items: flex-start; flex-direction: column; gap: 5px; padding: 13px 14px 15px; } .public-site .screenshot-product-preview figcaption strong { text-align: left; } }
+
+/* Free-plan advertising: third-party slots stay visually contained and responsive. */
+.free-ad-stack { align-items: center; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 18px; display: flex; flex-direction: column; gap: 12px; margin: 24px 0; padding: 14px; width: 100%; }
+.free-ad-heading { align-items: baseline; align-self: stretch; display: flex; justify-content: space-between; }
+.free-ad-heading span { color: var(--faint); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.free-ad-heading small { color: var(--muted); font-size: 10px; }
+.free-ad-slot { align-items: center; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; display: flex; justify-content: center; max-width: 100%; min-height: 50px; overflow: hidden; width: 100%; }
+.free-ad-native { min-height: 42px; }
+.free-ad-rectangle { height: 250px; max-width: 300px; }
+.free-ad-responsive { height: 90px; max-width: 728px; }
+.coming-soon-button { cursor: not-allowed; opacity: .72; }
+.plan-card-premium .coming-soon-button { border-style: dashed; }
+@media (max-width: 759px) { .free-ad-responsive { height: 50px; max-width: 320px; } }
+@media (prefers-reduced-motion: reduce) { .plan-card-premium:hover { transform: none; } }
