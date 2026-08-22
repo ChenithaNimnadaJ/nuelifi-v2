@@ -104,6 +104,7 @@ async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const parts = url.pathname.split("/").filter(Boolean);
   if (req.method === "GET" && url.pathname === "/health") return send(res, 200, { status: "ok", service: "neulifi-api", time: now() });
+  if (req.method === "GET" && url.pathname === "/api/paddle/config") { const environment = String(process.env.PADDLE_ENVIRONMENT || "").trim().toLowerCase(); if (environment !== "production" && environment !== "sandbox") return fail(res, 503, "Paddle environment is not configured. Set PADDLE_ENVIRONMENT to production or sandbox."); const values = [req.headers["cf-ipcountry"], req.headers["x-vercel-ip-country"]].map((value) => String(value || "").trim().toUpperCase()); const countryCode = values.find((value) => /^[A-Z]{2}$/.test(value) && value !== "XX" && value !== "T1"); return send(res, 200, countryCode ? { countryCode } : {}); }
   if (parts[0] !== "api") return fail(res, 404, "Route not found");
 
   try {

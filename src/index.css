@@ -922,3 +922,32 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 [data-theme="dark"] .plan-card.highlighted { box-shadow: 0 14px 38px rgba(0, 0, 0, .24); }
 @media (max-width: 800px) { .pricing-value-story { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .pricing-value-story { border-radius: 18px; margin-top: 32px; padding: 22px 18px; } .pricing-value-story h2 { font-size: 30px; } .upgrade-modal { border-radius: 20px; padding: 22px 18px; } .upgrade-modal h2 { font-size: 32px; margin-right: 34px; } .premium-story-hero { margin-top: 22px; padding: 18px; } .premium-story-hero p { font-size: 18px; } .upgrade-modal-footer > div { flex-direction: column; } .upgrade-modal-footer .button { width: 100%; } .privacy-card { align-items: flex-start; flex-direction: column; } .privacy-upgrade-button { width: 100%; } }
+
+/* Paddle pricing and post-checkout flow */
+.paddle-pricing-page { padding-bottom: 5rem; }
+.paddle-pricing-page .pricing-heading { gap: 1rem; }
+.paddle-billing-controls { display: inline-flex; align-items: center; gap: .25rem; margin: 1.25rem auto .25rem; padding: .25rem; border: 1px solid var(--border, rgba(24, 44, 34, .14)); border-radius: 999px; background: var(--surface-soft, rgba(255, 255, 255, .64)); box-shadow: 0 8px 24px rgba(19, 35, 27, .06); }
+.paddle-billing-controls button { border: 0; border-radius: 999px; padding: .7rem 1rem; background: transparent; color: var(--text-muted, #66736c); font: inherit; font-weight: 650; cursor: pointer; }
+.paddle-billing-controls button.active { background: var(--surface-strong, #18221d); color: var(--surface, #fff); }
+.paddle-billing-controls button span { display: block; margin-top: .15rem; font-size: .65rem; font-weight: 500; opacity: .75; }
+.paddle-location-note { display: block; color: var(--text-muted, #66736c); font-size: .78rem; }
+.paddle-status { max-width: 74rem; margin: 0 auto 1.25rem; }
+.paddle-plan-grid { align-items: stretch; }
+.paddle-plan-card { display: flex; flex-direction: column; min-height: 100%; }
+.paddle-plan-card .plan-features { flex: 1; }
+.paddle-plan-card .button { width: 100%; }
+.paddle-price-loading { display: inline-block; min-width: 2rem; color: var(--text-muted, #66736c); }
+.paddle-pricing-note { margin-top: 2rem; }
+.welcome-page { min-height: 100vh; display: grid; place-items: center; padding: 2rem 1.25rem; background: var(--page-bg, #f5f7f5); }
+.welcome-card { width: min(100%, 34rem); padding: clamp(2rem, 6vw, 4rem); border: 1px solid var(--border, rgba(24, 44, 34, .14)); border-radius: 1.5rem; background: var(--surface, #fff); box-shadow: 0 24px 70px rgba(19, 35, 27, .12); text-align: center; }
+.welcome-mark { display: grid; place-items: center; width: 3rem; height: 3rem; margin: 1.25rem auto; border-radius: 50%; background: var(--brand-soft, #e3f1e7); color: var(--brand-strong, #21844a); font-size: 1.35rem; font-weight: 800; }
+.welcome-card h1 { margin: 0; color: var(--text-strong, #18221d); font-size: clamp(1.8rem, 5vw, 2.8rem); letter-spacing: -.04em; }
+.welcome-card p { margin: 1rem auto 0; max-width: 28rem; color: var(--muted, #66736c); line-height: 1.65; }
+.welcome-actions { display: grid; gap: .9rem; margin-top: 1.75rem; }
+.welcome-actions .button { justify-content: center; }
+.welcome-actions small { color: var(--muted, #66736c); font-size: .76rem; }
+@media (max-width: 640px) {
+  .paddle-billing-controls { width: 100%; justify-content: stretch; }
+  .paddle-billing-controls button { flex: 1; padding-inline: .65rem; }
+  .paddle-plan-card { min-height: auto; }
+}

@@ -7,10 +7,10 @@ type UpgradeModalProps = {
   reason: UpgradeReason;
   currentPlan: PlanId;
   onClose: () => void;
-  onViewProfile: () => void;
+  onViewPlans: () => void;
 };
 
-export function UpgradeModal({ open, reason, currentPlan, onClose, onViewProfile }: UpgradeModalProps) {
+export function UpgradeModal({ open, reason, currentPlan, onClose, onViewPlans }: UpgradeModalProps) {
   if (!open) return null;
   const current = getPlan(currentPlan);
   const premium = getPlan("premium");
@@ -29,9 +29,9 @@ export function UpgradeModal({ open, reason, currentPlan, onClose, onViewProfile
       <p className="upgrade-modal-intro">{intro}</p>
       {isPricing && <div className="premium-story-hero"><div><span className="premium-story-label">ONE SIMPLE YEARLY PLAN</span><strong>$30</strong><small>per year</small><span className="premium-story-monthly">$2.50 per month when billed annually</span></div><p>Think of it as a small investment in noticing your own rhythm more clearly—without turning food into another source of pressure.</p></div>}
       <div className="premium-benefit-grid"><article><span>01</span><strong>More room for the day</strong><p>Check in across your main meals and snacks as your real day unfolds.</p></article><article><span>02</span><strong>Deeper pattern view</strong><p>Connect meal history, actions, and progress with full analytics access.</p></article><article><span>03</span><strong>Private, practical guidance</strong><p>Use your context to keep suggestions relevant, gentle, and easier to repeat.</p></article></div>
-      <div className="upgrade-value-grid upgrade-value-grid-secondary"><article className="upgrade-value-card upgrade-value-card-premium"><span className="upgrade-recommended">{currentPlan === "premium" ? "ACTIVE PLAN" : "BEST VALUE"}</span><span className="upgrade-value-icon">✦</span><strong>Upgrade to Premium · ${premium.annualPrice}/year</strong><p>More room to check in, fuller analytics, community leaderboard access, and a clearer view of what is becoming consistent.</p><small>5 analyses per day · Full analytics · Affiliate rewards · Premium leaderboard</small><button className="button button-green upgrade-card-button coming-soon-button" type="button" disabled>{currentPlan === "premium" ? "Premium is active" : "Coming soon"}</button></article></div>
+      <div className="upgrade-value-grid upgrade-value-grid-secondary"><article className="upgrade-value-card upgrade-value-card-premium"><span className="upgrade-recommended">{currentPlan === "premium" ? "ACTIVE PLAN" : "BEST VALUE"}</span><span className="upgrade-value-icon">✦</span><strong>Premium · ${premium.annualPrice}/year</strong><p>More room to check in, fuller analytics, community leaderboard access, and a clearer view of what is becoming consistent.</p><small>5 analyses per day · Full analytics · Referral rewards · Premium leaderboard</small><button className="button button-green upgrade-card-button" type="button" onClick={onViewPlans}>{currentPlan === "premium" ? "View plan details" : "See Premium"}</button></article></div>
       <p className="upgrade-health-note">Neulifi is not medical care and cannot promise to prevent or diagnose disease. It may help you notice patterns earlier and prepare for more informed conversations with a qualified professional.</p>
-      <div className="upgrade-modal-footer"><span>{isPricing ? "Paid plans will appear here when they are ready. Free access remains available today." : "Your plan changes only after a successful payment is verified."}</span><div><button className="button button-soft" type="button" onClick={onViewProfile}>View plan details</button><button className="button button-soft" type="button" onClick={onClose}>Keep exploring</button></div></div>
+      <div className="upgrade-modal-footer"><span>{isPricing ? "Choose the plan that fits today. There are no free trials, and billing starts with the first cycle." : "Your plan changes only after a successful payment is verified."}</span><div><button className="button button-soft" type="button" onClick={onViewPlans}>View plan details</button><button className="button button-soft" type="button" onClick={onClose}>Keep exploring</button></div></div>
     </section>
   </div>;
 }
