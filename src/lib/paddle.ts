@@ -1,14 +1,16 @@
 import { initializePaddle, type Environments, type Paddle, type PricePreviewResponse } from "@paddle/paddle-js";
 import type { PlanId } from "./plans";
 
-export type PaddleBillingInterval = "month" | "year";
+export type PaddleBillingInterval = "year";
 export type PaddleTierName = "Free" | "Pro" | "Premium";
 
 export interface Tier {
   name: PaddleTierName;
   description: string;
   features: string[];
-  priceId: { month: string; year: string };
+  priceId: { year: string };
+  /** Retained for backend recognition of existing monthly records; never shown in the public plan picker. */
+  legacyPriceId?: { month: string };
   planId: PlanId;
 }
 
@@ -23,27 +25,23 @@ export const paddleTiers: Tier[] = [
     planId: "free",
     description: "A simple starting point for building a healthier daily rhythm.",
     features: ["2 meal analyses each day", "Basic analytics", "Private meal history", "Referral rewards"],
-    priceId: { month: "", year: "" },
+    priceId: { year: "" },
   },
   {
     name: "Pro",
     planId: "pro",
     description: "More room to understand patterns and keep your momentum going.",
     features: ["3 meal analyses each day", "Better analytics", "Private meal history", "Referral rewards"],
-    priceId: {
-      month: "pri_01m0n2etrg948zmj7waaxgt2yp",
-      year: "pri_01m0n2hxhsb9ktr7wrab5h7jkr",
-    },
+    priceId: { year: "pri_01m0n2hxhsb9ktr7wrab5h7jkr" },
+    legacyPriceId: { month: "pri_01m0n2etrg948zmj7waaxgt2yp" },
   },
   {
     name: "Premium",
     planId: "premium",
     description: "The complete Neulifi experience for a deeper view of your health rhythm.",
     features: ["5 meal analyses each day", "Full analytics access", "Premium leaderboard access", "Referral rewards"],
-    priceId: {
-      month: "pri_01m0n27xgae352hc3xjpa69e1d",
-      year: "pri_01m0n2cgc7tjfqg3n2pzmkyvx7",
-    },
+    priceId: { year: "pri_01m0n2cgc7tjfqg3n2pzmkyvx7" },
+    legacyPriceId: { month: "pri_01m0n27xgae352hc3xjpa69e1d" },
   },
 ];
 

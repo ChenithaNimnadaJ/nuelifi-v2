@@ -53,4 +53,5 @@ export const neulifiApi = {
   usage: async () => { const payload = await request<{ plan: PlanId; status: string; used: number; usage_limit: number; analysis_level: AnalysisLevel }>("/api/usage"); return { plan: payload.plan, status: payload.status, used: payload.used, usageLimit: payload.usage_limit, analysisLevel: payload.analysis_level } as UsageSnapshot; },
   checkout: (plan: "pro" | "premium") => request<{ url: string }>("/api/checkout", { method: "POST", body: JSON.stringify({ plan }) }),
   customerPortal: () => request<{ url: string }>("/api/paddle/customer-portal", { method: "POST", body: JSON.stringify({}) }),
+  claimPendingPurchase: () => request<{ claimed: number; plan: PlanId | null }>("/api/paddle/claim-pending-purchase", { method: "POST", body: JSON.stringify({}) }),
 };

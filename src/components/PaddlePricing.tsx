@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getHealthySession } from "../lib/supabase";
 import { getPaddle, paddleTiers, readFormattedTotal, type PaddleBillingInterval, type PaddleRuntimeConfig, type Tier } from "../lib/paddle";
 
-type PaddlePricingProps = { onAuth: (mode: "signin" | "signup") => void };
+type PaddlePricingProps = { onAuth: (mode: "signin" | "signup", returnPath?: "/app" | "/welcome") => void };
 type PriceState = Record<string, string>;
 
 function runtimeConfigUrl() {
@@ -21,7 +21,7 @@ async function loadPrices(config: PaddleRuntimeConfig): Promise<PriceState> {
 }
 
 export function PaddlePricing({ onAuth }: PaddlePricingProps) {
-  const [interval, setInterval] = useState<PaddleBillingInterval>("year");
+  const interval: PaddleBillingInterval = "year";
   const [prices, setPrices] = useState<PriceState>({});
   const [countryCode, setCountryCode] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -53,20 +53,21 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
   const priceLabel = (tier: Tier) => tier.planId === "free" ? "Free" : prices[`${tier.planId}-${interval}`] || "—";
   const checkout = async (tier: Tier) => {
     if (tier.planId === "free") { onAuth("signup"); return; }
-    if (!tier.priceId[interval]) { setError(`${tier.name} is not configured for ${interval === "year" ? "yearly" : "monthly"} billing yet.`); return; }
+    if (!tier.priceId.year) { setError(`${tier.name} is not configured for annual billing yet.`); return; }
     setCheckoutPlan(tier.planId);
     setError("");
+    window.localStorage.setItem("neulifi-checkout-intent", JSON.stringify({ plan: tier.planId, billing_interval: "year", startedAt: Date.now() }));
     try {
-      const session = await getHealthySession();
-      if (!session?.user) { onAuth("signup"); return; }
+      const session = await getHealthySession().catch(() => null);
       const paddle = await getPaddle();
       paddle.Checkout.open({
-        items: [{ priceId: tier.priceId[interval], quantity: 1 }],
-        customer: session.user.email ? { email: session.user.email } : undefined,
-        customData: { user_id: session.user.id, plan: tier.planId, billing_interval: interval, source: "neulifi" },
+        items: [{ priceId: tier.priceId.year, quantity: 1 }],
+        customer: session?.user?.email ? { email: session.user.email } : undefined,
+        customData: { plan: tier.planId, billing_interval: "year", source: "neulifi", ...(session?.user?.id ? { user_id: session.user.id } : {}) },
         settings: { displayMode: "overlay", variant: "one-page", successUrl: `${window.location.origin}/welcome` },
       });
     } catch (value) {
+      window.localStorage.removeItem("neulifi-checkout-intent");
       setError(value instanceof Error ? value.message : "Checkout could not be opened.");
     } finally {
       setCheckoutPlan(null);
@@ -79,10 +80,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       <span className="public-kicker">NEULIFI PLANS</span>
       <h1>More room for the rhythm you are building.</h1>
       <p>Choose the level that fits today. Paid plans are billed from the first cycle—there are no free trials—and you can manage your plan from your account.</p>
-      <div className="paddle-billing-controls" role="group" aria-label="Billing period">
-        <button type="button" className={interval === "month" ? "active" : ""} onClick={() => setInterval("month")}>Monthly</button>
-        <button type="button" className={interval === "year" ? "active" : ""} onClick={() => setInterval("year")}>Yearly <span>Save with annual billing</span></button>
-      </div>
+      <div className="paddle-billing-controls paddle-billing-controls-annual" aria-label="Billing period"><span className="paddle-annual-badge">Annual billing</span><strong>One clear yearly price</strong><small>No monthly option is offered at this time.</small></div>
       <small className="paddle-location-note">{countryLabel}. Final totals, taxes, and currency are returned by Paddle.</small>
     </section>
     {error && <div className="data-note data-error paddle-status" role="alert">{error}</div>}
@@ -98,8 +96,8 @@ function PaddlePlanCard({ tier, interval, price, loading, checkoutPlan, onSubscr
   return <article className={`plan-card plan-card-premium paddle-plan-card ${highlighted ? "highlighted" : ""}`}>
     <div className="plan-card-top"><span className="plan-label">{tier.name}</span>{highlighted && <span className="plan-popular">BEST VALUE</span>}</div>
     <p>{tier.description}</p>
-    <div className="plan-price">{loading && tier.planId !== "free" ? <span className="paddle-price-loading" aria-label="Loading price">…</span> : price}<small>{tier.planId === "free" ? "" : ` / ${interval === "year" ? "year" : "month"}`}</small></div>
-    {tier.planId !== "free" && <div className="plan-monthly-anchor">No free trial · billed from the first cycle</div>}
+    <div className="plan-price">{loading && tier.planId !== "free" ? <span className="paddle-price-loading" aria-label="Loading price">…</span> : price}<small>{tier.planId === "free" ? "" : " / year"}</small></div>
+    {tier.planId !== "free" && <div className="plan-monthly-anchor">No free trial · billed annually from the first cycle</div>}
     <div className="plan-features plan-features-premium">{tier.features.map((feature, index) => <span className={index === 0 ? "plan-feature-emphasis" : ""} key={feature}>✓ {feature}</span>)}</div>
     <button className={`button ${highlighted ? "button-green" : "button-soft"}`} type="button" onClick={onSubscribe} disabled={loading && tier.planId !== "free" || checkoutPlan === tier.planId}>{checkoutPlan === tier.planId ? "Opening…" : tier.planId === "free" ? "Start free" : "Subscribe"}</button>
   </article>;
