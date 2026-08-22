@@ -15,7 +15,7 @@ export function AuthScreen({ onPreview, onAuthenticated, themeMode, onThemeChang
   const chooseTheme = async (nextMode: ThemeMode) => { try { await onThemeChange(nextMode); } catch (value) { setMessage(value instanceof Error ? value.message : "Could not save your appearance preference."); } };
 
   const signInWithGoogle = async () => {
-    if (!supabase) { setMessage("Supabase is not configured in this environment."); return; }
+    if (!supabase) { setMessage("Account services are not available in this environment."); return; }
     setBusy(true);
     setMessage("");
     try {
@@ -26,7 +26,7 @@ export function AuthScreen({ onPreview, onAuthenticated, themeMode, onThemeChang
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!supabase) { setMessage("Supabase is not configured in this environment."); return; }
+    if (!supabase) { setMessage("Account services are not available in this environment."); return; }
     setBusy(true);
     setMessage("");
     try {
