@@ -42,7 +42,7 @@
     "premium": {
       "id": "premium",
       "name": "Premium",
-      "description": "The complete Nuelifi experience for a deeper view of your health rhythm.",
+      "description": "The complete Neulifi experience for a deeper view of your health rhythm.",
       "price": 3,
       "priceLabel": "$3 / month",
       "annualPrice": 30,

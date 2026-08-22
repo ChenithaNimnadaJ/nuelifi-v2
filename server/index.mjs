@@ -81,12 +81,12 @@ function mealAssessment(input = {}) {
       carbohydrates: Number(input.carbohydrates ?? 55), fats: Number(input.fats ?? 18),
       vegetables, fibre: Number(input.fibre ?? 6), sugar, portionBalance: portion,
     },
-    explanation: rating === "Excellent" ? "A balanced meal with a strong mix of food groups." : "This meal has a good foundation and one or two practical opportunities to improve.",
+    explanation: "This meal has a useful foundation. Here are one or two practical ways to add variety or balance.",
     mealGuidance: [
-      ...(vegetables < 3 ? ["Add vegetables to your next similar meal"] : []),
-      ...(portion < 3 ? ["Keep the carbohydrate portion moderate in a future meal"] : []),
-      ...(sugar > 2 ? ["Choose a lower-sugar option next time"] : []),
-      "Keep a balanced mix of food groups in your next meal.",
+      ...(vegetables < 3 ? ["Add another serving of vegetables alongside a similar meal."] : []),
+      ...(portion < 3 ? ["If it suits you, balance the plate with a little more of the other food groups."] : []),
+      ...(sugar > 2 ? ["Consider a less sweet option next time, if that feels practical."] : []),
+      "Keep a varied mix of foods across the day.",
     ].slice(0, 4),
     dailyTasks: ["Take a short movement break today", "Drink a glass of water with your next meal"],
   };
