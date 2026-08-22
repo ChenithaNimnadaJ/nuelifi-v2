@@ -16,7 +16,8 @@ export interface StreakSnapshot { currentStreak: number; longestStreak: number; 
 export interface LeaderboardEntry { rank: number; userId: string; displayName: string; score: number; isCurrent: boolean; }
 export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; }
 
-const API_URL = String(import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+const configuredApiUrl = String(import.meta.env.VITE_API_URL || "").trim();
+const API_URL = import.meta.env.MODE === "production" && /^(https?:)?\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredApiUrl) ? "" : configuredApiUrl.replace(/\/+$/, "");
 async function request<T>(path: string, options?: RequestInit, allowRefresh = true): Promise<T> {
   const session = await getHealthySession();
   const controller = new AbortController();

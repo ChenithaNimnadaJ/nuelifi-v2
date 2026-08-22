@@ -838,3 +838,46 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .plan-card-premium .coming-soon-button { border-style: dashed; }
 @media (max-width: 759px) { .free-ad-responsive { height: 50px; max-width: 320px; } }
 @media (prefers-reduced-motion: reduce) { .plan-card-premium:hover { transform: none; } }
+
+/* Theme-safe public meal section and responsive product surfaces. */
+.public-site .public-meal-section { background: var(--surface-raised); border: 1px solid var(--border); box-shadow: var(--shadow); color: var(--text); }
+.public-site .public-meal-copy .public-kicker { color: var(--brand-strong); }
+.public-site .public-meal-copy h2 { color: var(--text-strong); }
+.public-site .public-meal-copy > p { color: var(--muted); }
+.public-site .public-meal-visual { background: var(--surface-soft); border-color: var(--border); }
+.public-site .public-visual-caption span { color: var(--brand-strong); }
+.public-site .public-visual-caption small, .public-site .public-visual-footnote { color: var(--muted); }
+.public-site .public-signal-list { border-top-color: var(--border); }
+.public-site .public-signal { border-bottom-color: var(--border); }
+.public-site .public-signal span { color: var(--muted); }
+.public-site .public-signal strong.good { color: var(--brand-strong); }
+.public-site .public-signal strong.watch { color: var(--amber); }
+.public-site .public-signal strong.neutral { color: var(--muted-strong); }
+.pricing-entitlement-note { margin: 14px auto 0; max-width: 760px; color: var(--muted); font-size: 12px; line-height: 1.55; text-align: center; }
+.pricing-entitlement-note strong { color: var(--text-strong); }
+.leaderboard-gated { align-items: flex-start; display: flex; gap: 16px; max-width: 720px; }
+.leaderboard-gated h2 { margin: 0; }
+.leaderboard-gated p { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 7px 0 16px; }
+@media (max-width: 959px) {
+  .app-shell { width: 100%; }
+  main { width: 100%; }
+  .screen { width: 100%; }
+}
+@media (max-width: 560px) {
+  .screen-heading-row, .leaderboard-header { flex-direction: column; gap: 11px; }
+  .task-heading-actions { align-items: center; display: flex; justify-content: space-between; width: 100%; }
+  .task-count-badge, .history-count, .referral-glyph { align-self: flex-start; }
+  .leaderboard-gated { flex-direction: column; }
+  .leaderboard-gated .button { width: 100%; }
+}
+@media (max-width: 360px) {
+  .screen { padding-left: 13px; padding-right: 13px; }
+  .stat-grid { gap: 6px; }
+  .stat-card { padding-inline: 8px; }
+  .stat-card strong { font-size: 17px; }
+  .stat-card small { font-size: 7px; letter-spacing: .03em; }
+  .history-row { gap: 8px; grid-template-columns: 46px minmax(0, 1fr) auto auto; padding-inline: 7px; }
+  .history-row img { height: 46px; width: 46px; }
+  .podium-card { min-width: 0; }
+  .podium-card b { font-size: 20px; }
+}
