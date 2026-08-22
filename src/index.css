@@ -501,3 +501,11 @@ h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 
 .upgrade-card-button { font-size: 10px; margin-top: 14px; min-height: 36px; padding: 8px 10px; width: 100%; }
 .upgrade-checkout-error { margin-top: 14px; }
+
+/* Neulifi brand asset */
+.brand-logo { display: block; flex: 0 0 auto; height: 28px; object-fit: contain; width: 28px; }
+.brand .brand-logo { height: 27px; width: 27px; }
+.auth-brand .brand-logo { height: 30px; width: 30px; }
+.desktop-rail-brand .brand-logo { height: 28px; width: 28px; }
+.public-brand .brand-logo { height: 29px; width: 29px; }
+.preview-mini-logo { display: block; height: 19px; object-fit: contain; width: 19px; }

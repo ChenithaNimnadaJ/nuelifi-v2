@@ -1,4 +1,4 @@
-# Nuelifi payment activation
+# Neulifi payment activation
 
 The payment path is implemented server-side in `cloudflare/worker.mjs` and is intentionally inactive until the provider secrets and annual Stripe Price IDs are configured as Cloudflare Worker secrets.
 
@@ -17,14 +17,14 @@ Configure these Worker secrets without committing them to GitHub:
 The existing `SUPABASE_URL` and `FRONTEND_ORIGIN` Worker configuration must remain present. The public checkout entry point is `POST /api/checkout`, and the Stripe event destination is:
 
 ```text
-https://nuelifi.chenithanimnadaj.workers.dev/api/stripe/webhook
+https://neulifi.chenithanimnadaj.workers.dev/api/stripe/webhook
 ```
 
 ## Stripe configuration
 
 Create recurring annual Prices for Pro at $10 USD per year and Premium at $30 USD per year. Configure the webhook to send at least `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, and `invoice.payment_failed`.
 
-Nuelifi writes `user_id` and `plan` into Checkout and Subscription metadata. The Worker verifies the raw request body signature, records every event in `payment_events`, uses an atomic claim function to avoid concurrent duplicate processing, retries events previously marked `failed`, and updates the user’s `subscriptions` row only after a verified event. Stripe retries a delivery that does not receive a successful 2xx response; the ledger preserves the event state for safe retry handling.
+Neulifi writes `user_id` and `plan` into Checkout and Subscription metadata. The Worker verifies the raw request body signature, records every event in `payment_events`, uses an atomic claim function to avoid concurrent duplicate processing, retries events previously marked `failed`, and updates the user’s `subscriptions` row only after a verified event. Stripe retries a delivery that does not receive a successful 2xx response; the ledger preserves the event state for safe retry handling.
 
 ## Activation checklist
 

@@ -20,7 +20,7 @@ export function UpgradeModal({ open, reason, currentPlan, onClose, onViewProfile
   const pro = getPlan("pro");
   const premium = getPlan("premium");
   const title = reason === "daily-limit" ? "Keep your daily rhythm going" : "See the patterns behind your meals";
-  const intro = reason === "daily-limit" ? `You’ve reached today’s ${current.name} allowance. Upgrade when you want more room to check in across your day.` : "Your basic view is ready. Unlock richer patterns, comparisons, and context-aware insights as your Nuelifi space grows.";
+  const intro = reason === "daily-limit" ? `You’ve reached today’s ${current.name} allowance. Upgrade when you want more room to check in across your day.` : "Your basic view is ready. Unlock richer patterns, comparisons, and context-aware insights as your Neulifi space grows.";
   const checkout = async (plan: "pro" | "premium") => { setCheckoutError(""); setLoading(plan); try { await onCheckout(plan); } catch (error) { setCheckoutError(error instanceof Error ? error.message : "Checkout could not be started."); } finally { setLoading(null); } };
   return <div className="upgrade-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-modal-title">

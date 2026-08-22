@@ -7,7 +7,7 @@ import { analyzeMealWithGemini } from "./gemini.mjs";
 import { analyzeMealWithGroq } from "./groq.mjs";
 
 const port = Number(process.env.PORT || 8787);
-const dataFile = resolve(process.env.NUELIFI_DATA_FILE || "./data/nuelifi.json");
+const dataFile = resolve(process.env.NEULIFI_DATA_FILE || process.env.NUELIFI_DATA_FILE || "./data/neulifi.json");
 const { db, persist, findUser, findMeal, findAction } = await createStore(dataFile);
 
 const now = () => new Date().toISOString();
@@ -103,7 +103,7 @@ async function route(req, res) {
   if (req.method === "OPTIONS") return send(res, 204, {});
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const parts = url.pathname.split("/").filter(Boolean);
-  if (req.method === "GET" && url.pathname === "/health") return send(res, 200, { status: "ok", service: "nuelifi-api", time: now() });
+  if (req.method === "GET" && url.pathname === "/health") return send(res, 200, { status: "ok", service: "neulifi-api", time: now() });
   if (parts[0] !== "api") return fail(res, 404, "Route not found");
 
   try {
@@ -158,6 +158,6 @@ async function route(req, res) {
 }
 
 const server = createServer((req, res) => route(req, res).catch((error) => fail(res, 500, error.message)));
-server.listen(port, "0.0.0.0", () => console.log(`Nuelifi API listening on http://localhost:${port}`));
+server.listen(port, "0.0.0.0", () => console.log(`Neulifi API listening on http://localhost:${port}`));
 
 export { server, dataFile };

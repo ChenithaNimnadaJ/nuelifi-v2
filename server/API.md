@@ -1,6 +1,6 @@
-# Nuelifi API
+# Neulifi API
 
-The local API runs on `http://localhost:8787` with `npm run backend`. Data is stored in `data/nuelifi.json` for the prototype. Set `NUELIFI_DATA_FILE` to use a different file.
+The local API runs on `http://localhost:8787` with `npm run backend`. Data is stored in `data/neulifi.json` for the prototype. Set `NEULIFI_DATA_FILE` to use a different file; the legacy `NUELIFI_DATA_FILE` alias is still accepted.
 
 ## Endpoints
 
