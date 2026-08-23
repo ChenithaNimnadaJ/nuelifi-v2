@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-type AdSlot = "responsive" | "analysis" | "insights";
+type AdSlot = "responsive";
 type AdsenseWindow = Window & {
   adsbygoogle?: unknown[];
   __neulifiAdsenseLoader?: Promise<void>;
@@ -8,7 +8,7 @@ type AdsenseWindow = Window & {
 
 const ADS_CONSENT_KEY = "neulifi-ads-consent";
 const ADSENSE_CLIENT = "ca-pub-7297802357104625";
-const ADSENSE_SLOTS: Record<AdSlot, string> = { responsive: "3398954371", analysis: "5852787976", insights: "3745499387" };
+const ADSENSE_SLOT = "3398954371";
 
 function loadAdsenseScript(): Promise<void> {
   const win = window as AdsenseWindow;
@@ -47,7 +47,7 @@ export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
     ad.className = "adsbygoogle";
     ad.style.display = "block";
     ad.dataset.adClient = ADSENSE_CLIENT;
-    ad.dataset.adSlot = ADSENSE_SLOTS[slot];
+    ad.dataset.adSlot = ADSENSE_SLOT;
     ad.dataset.adFormat = "auto";
     ad.dataset.fullWidthResponsive = "true";
     target.replaceChildren(ad);
@@ -69,7 +69,7 @@ export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
 
   return <aside className={`free-ad-placement free-ad-placement-${slot}`} aria-label="Sponsored content">
     <div className="free-ad-heading"><span>SUPPORTED BY ADS</span><small>Free plan</small></div>
-    {consent ? <div className={`free-ad-slot ${slot === "responsive" || slot === "analysis" || slot === "insights" ? "free-ad-responsive" : "free-ad-rectangle"}`}>
+    {consent ? <div className="free-ad-slot free-ad-responsive">
       <div id={slotId} aria-live="polite" />
       {error && <small className="free-ad-error">Ads are temporarily unavailable.</small>}
     </div> : <div className="free-ad-consent"><p>Optional ads help keep the Free plan available.</p><button className="text-button" type="button" onClick={() => { window.localStorage.setItem(ADS_CONSENT_KEY, "granted"); setConsent(true); }}>Allow sponsored content</button></div>}

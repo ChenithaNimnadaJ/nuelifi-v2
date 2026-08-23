@@ -1086,19 +1086,14 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .free-ad-placement .free-ad-heading small { color: var(--muted); font-size: 9px; }
 .free-ad-placement .free-ad-slot { border: 0; border-radius: 10px; margin: 0; min-height: 0; padding: 0; width: 100%; } .free-ad-error { color: var(--faint); display: block; font-size: 10px; padding: 8px; text-align: center; }
 .free-ad-placement-responsive .free-ad-slot { min-height: 90px; max-width: 728px; }
-.free-ad-placement-analysis .free-ad-slot, .free-ad-placement-insights .free-ad-slot { min-height: 90px; max-width: 728px; }
-.free-ad-placement-rectangle { align-items: stretch; }
-.free-ad-placement-rectangle .free-ad-slot { height: 250px; max-width: 300px; }
 @media (min-width: 1280px) {
   .home-screen > .free-ad-placement-responsive { grid-column: 1 / -1; }
-  .home-screen > .free-ad-placement-rectangle { align-self: start; grid-column: 2 / 3; grid-row: auto; margin-top: 18px; }
   .home-screen > .streak-card { grid-column: 1 / 2; }
   .home-screen > .home-tool-links, .home-screen > .capture-card { grid-column: 1 / -1; }
 }
 @media (max-width: 759px) {
-  .free-ad-placement-responsive .free-ad-slot, .free-ad-placement-analysis .free-ad-slot, .free-ad-placement-insights .free-ad-slot { min-height: 50px; max-width: 320px; }
+  .free-ad-placement-responsive .free-ad-slot { min-height: 50px; max-width: 320px; }
   .free-ad-placement { margin: 12px 0 16px; padding: 8px; }
-  .free-ad-placement-rectangle { margin-top: 10px; }
 }
 
 
