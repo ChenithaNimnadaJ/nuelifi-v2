@@ -1012,3 +1012,49 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .referral-progress-track i { background: var(--brand); border-radius: inherit; display: block; height: 100%; min-width: 0; }
 @media (max-width: 760px) { .referral-rate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .referral-rate-card { padding: 17px; } .referral-rate-heading { flex-direction: column; gap: 11px; } .referral-rate-grid { grid-template-columns: 1fr; } .referral-rate-grid > div { min-height: 0; } }
+
+
+/* Proportionality correction: keep the public hero editorial without letting desktop type dominate the product preview. */
+.public-site .public-hero-premium { gap: clamp(34px, 5.5vw, 84px); grid-template-columns: minmax(0, .92fr) minmax(420px, 1.08fr); min-height: min(720px, calc(100dvh - 75px)); padding-bottom: clamp(72px, 9vw, 114px); padding-top: clamp(64px, 8vw, 108px); }
+.public-site .redesigned-hero h1 { font-size: clamp(52px, 6.25vw, 86px); line-height: .94; margin-bottom: 26px; max-width: 680px; }
+.public-site .redesigned-product-preview .preview-window-body { min-height: 460px; }
+@media (max-width: 1050px) {
+  .public-site .public-hero-premium { gap: 48px; grid-template-columns: minmax(0, .95fr) minmax(390px, 1.05fr); }
+}
+@media (max-width: 900px) {
+  .public-site .public-hero-premium { gap: 42px; grid-template-columns: 1fr; }
+  .public-site .redesigned-hero h1 { font-size: clamp(51px, 10vw, 78px); }
+}
+@media (max-width: 620px) {
+  .public-site .public-hero-premium { padding-top: 54px; }
+  .public-site .redesigned-hero h1 { font-size: clamp(43px, 13vw, 64px); }
+  .public-site .redesigned-product-preview .preview-window-body { min-height: 430px; }
+}
+
+
+/* Pricing hierarchy correction: price first, annual billing as quiet supporting context. */
+.paddle-pricing-page .pricing-heading-premium { padding-bottom: 30px; }
+.paddle-pricing-page .pricing-heading-premium > p { max-width: 650px; }
+.paddle-billing-note { align-items: baseline; display: inline-flex; gap: 9px; margin-top: 18px; }
+.paddle-billing-note strong { color: var(--text-strong); font-size: 12px; font-weight: 750; }
+.paddle-billing-note small { border-left: 1px solid var(--border); color: var(--muted); font-size: 10px; padding-left: 9px; }
+.paddle-pricing-page .paddle-location-note { margin-top: 8px; }
+.paddle-pricing-page .plan-card-premium { padding: clamp(20px, 2.6vw, 28px); }
+.paddle-pricing-page .plan-card-premium > p { min-height: 0; }
+.paddle-pricing-page .plan-card-premium .plan-price { margin-top: 8px; }
+.paddle-pricing-page .plan-annual-label { color: var(--muted); font-size: 10px; line-height: 1.4; margin-top: 7px; }
+.paddle-pricing-page .plan-features-premium { margin-top: 18px; }
+@media (max-width: 620px) {
+  .paddle-pricing-page .pricing-heading-premium { padding-bottom: 24px; }
+  .paddle-billing-note { margin-top: 14px; }
+  .paddle-pricing-page .plan-card-premium { padding: 20px; }
+}
+
+
+/* Contextual action hierarchy: the action leads, its reason supports without inflating the card. */
+.result-action { text-decoration: none; }
+.result-action-copy { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
+.result-action-copy strong { color: inherit; font-size: 12px; font-weight: 650; line-height: 1.35; overflow-wrap: anywhere; }
+.result-action-copy small { color: var(--muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
+.result-action.completed .result-action-copy strong { color: var(--faint); text-decoration: line-through; }
+.result-action.completed .result-action-copy small { color: var(--faint); }

@@ -6,7 +6,7 @@ export type ActionStatus = "upcoming" | "completed" | "missed";
 export type RegionId = "global" | "south-asia" | "east-asia" | "southeast-asia" | "europe" | "north-america" | "latin-america" | "mena" | "sub-saharan-africa";
 export interface HealthContext { conditions: string[]; allergies: string[]; notes?: string; }
 export interface UserPreferences { notifications?: boolean; dailyReminders?: boolean; weeklySummary?: boolean; appearance?: "system" | "light" | "dark"; onboardingCompleted?: boolean; dietaryPreference?: string; activityLevel?: string; healthContext?: HealthContext; region?: RegionId; timezone?: string; leaderboardOptIn?: boolean; referralCode?: string; [key: string]: unknown; }
-export interface MealAnalysis { rating: MealRating; score: number; indicators: Record<string, number>; explanation: string; mealGuidance: string[]; dailyTasks: string[]; recommendations?: string[]; }
+export interface MealAnalysis { rating: MealRating; score: number; indicators: Record<string, number>; explanation: string; mealGuidance: string[]; dailyTasks: string[]; dailyTaskReasons?: string[]; recommendations?: string[]; }
 export interface User { id: string; email: string; name: string; goals: string[]; preferences?: UserPreferences; region?: RegionId; timezone?: string; leaderboardOptIn?: boolean; neulifiScore?: number; }
 export interface Meal { id: string; userId: string; imageUrl: string; mealName: string; capturedAt: string; status: "analysed"; analysis: MealAnalysis; }
 export interface Action { id: string; userId: string; mealId: string | null; title: string; description?: string; completed: boolean; status?: ActionStatus; dueAt?: string | null; createdAt: string; completedAt: string | null; }

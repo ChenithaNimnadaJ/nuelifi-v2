@@ -93,7 +93,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       <span className="public-kicker">NEULIFI PLANS</span>
       <h1>More room for the rhythm you are building.</h1>
       <p>Choose the level that fits today. Paid plans are billed from the first cycle—there are no free trials—and you can manage your plan from your account.</p>
-      <div className="paddle-billing-controls paddle-billing-controls-annual" aria-label="Billing period"><span className="paddle-annual-badge">Annual billing</span><strong>One clear yearly price</strong><small>No monthly option is offered at this time.</small></div>
+      <div className="paddle-billing-note" aria-label="Billing frequency"><strong>Billed annually</strong><small>Annual-only plans</small></div>
       <small className="paddle-location-note">{countryLabel}. Final totals, taxes, and currency are shown at checkout.</small>
     </section>
     {error && <div className="data-note data-error paddle-status" role="alert">{error}</div>}
@@ -110,7 +110,7 @@ function PaddlePlanCard({ tier, interval, price, loading, checkoutPlan, onSubscr
     <div className="plan-card-top"><span className="plan-label">{tier.name}</span>{highlighted && <span className="plan-popular">BEST VALUE</span>}</div>
     <p>{tier.description}</p>
     <div className="plan-price">{loading && tier.planId !== "free" ? <span className="paddle-price-loading" aria-label="Loading price">…</span> : price}<small>{tier.planId === "free" ? "" : " / year"}</small></div>
-    {tier.planId !== "free" && <div className="plan-monthly-anchor">No free trial · billed annually from the first cycle</div>}
+    {tier.planId !== "free" && <div className="plan-annual-label">Billed annually · no free trial</div>}
     <div className="plan-features plan-features-premium">{tier.features.map((feature, index) => <span className={index === 0 ? "plan-feature-emphasis" : ""} key={feature}>✓ {feature}</span>)}</div>
     <button className={`button ${highlighted ? "button-green" : "button-soft"}`} type="button" onClick={onSubscribe} disabled={loading && tier.planId !== "free" || tier.planId !== "free" && price === "Unavailable" || checkoutPlan === tier.planId}>{checkoutPlan === tier.planId ? "Opening…" : tier.planId === "free" ? "Start free" : price === "Unavailable" ? "Price unavailable" : "Subscribe"}</button>
   </article>;
