@@ -29,7 +29,7 @@ Then replace the placeholders in `.env.local`.
 | `NEXT_PUBLIC_SUPABASE_URL` | Optional deployment alias | Public | Same Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Optional deployment alias | Public | Same Supabase publishable/anon key |
 | `VITE_API_URL` | Browser-to-backend requests | Public URL | The deployed backend URL, or `http://localhost:8787` locally |
-| `VITE_AUTH_REDIRECT_URL` | Supabase email verification callback | Public URL | Optional exact app/preview origin; otherwise the current browser origin is used |
+| `VITE_AUTH_REDIRECT_URL` | Supabase OAuth, email verification, and recovery callback origin | Public URL | Set `https://neulifi.online` for an explicit production build; local builds may use their exact local origin |
 | `REQUIRE_AUTH` | Backend route protection | Server configuration | Set `true` on the deployed backend; local preview can leave it unset for explicit preview analysis |
 | `SUPABASE_URL` | Server-side Supabase client | Server configuration | Your Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | Optional server-side Supabase client | Server configuration | Your Supabase publishable/anon key |
@@ -39,7 +39,7 @@ Then replace the placeholders in `.env.local`.
 | `GEMINI_API_KEY` | Free-tier Gemini key 1 | **Private** | Replace only in the backend secret store |
 | `GEMINI_API_KEY_2` | Free-tier Gemini key 2 / redundancy | **Private** | Replace only in the backend secret store |
 
-The browser client supports both `VITE_*` and `NEXT_PUBLIC_*` Supabase public names. The Vite build maps the Next-style aliases when a deployment platform provides those names.
+The browser client supports both `VITE_*` and `NEXT_PUBLIC_*` Supabase public names. The Vite build maps the Next-style aliases when a deployment platform provides those names. The browser client intentionally has no hardcoded project URL or key fallback; provide the public values through the build environment.
 
 ## 3. Deployment replacement locations
 
@@ -49,6 +49,7 @@ For the frontend preview or web deployment, add only the public variables to the
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 VITE_API_URL
+VITE_AUTH_REDIRECT_URL
 ```
 
 If the platform specifically provides Next-style names, use:
@@ -57,6 +58,7 @@ If the platform specifically provides Next-style names, use:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 VITE_API_URL
+VITE_AUTH_REDIRECT_URL
 ```
 
 For the backend service, add the server-only variables to the platform’s **runtime secret/environment settings**:
@@ -94,34 +96,35 @@ In Supabase, open **Authentication → Providers** and enable the sign-in method
 
 ### Google sign-in
 
-In **Authentication → Providers → Google**, enable the provider and enter the Google OAuth **Client ID** and **Client Secret** from Google Cloud Console. For this project, the Google OAuth client’s **Authorized redirect URI** must be exactly:
+In **Authentication → Providers → Google**, enable the provider and enter the Google OAuth **Client ID** and **Client Secret** from Google Cloud Console. Do not guess the callback URL: open the Google provider page in the Supabase Dashboard and copy the exact **Callback URL (for OAuth)** shown there. Add that exact value to Google Cloud Console under the Web application client’s **Authorized redirect URIs**. The Google client’s **Authorized JavaScript origins** should contain only the public origin `https://neulifi.online` for production, without a path.
 
-```text
-https://mtfqktpfcwoigmpmdkwh.supabase.co/auth/v1/callback
-```
-
-This is the **Supabase callback**, not the Nuelifi preview URL. Copy the same value into Google Cloud Console under **APIs & Services → Credentials → OAuth 2.0 Client IDs → Authorized redirect URIs**. The Google client’s **Authorized JavaScript origins** should contain the public Nuelifi preview/app origin, for example `https://your-preview-domain.example.com`, with no path. The frontend’s **Continue with Google** button calls:
+The frontend’s **Continue with Google** button uses Supabase’s supported OAuth method and requests account selection:
 
 ```ts
 await supabase.auth.signInWithOAuth({
   provider: "google",
-  options: { redirectTo: window.location.origin },
+  options: {
+    redirectTo: "https://neulifi.online/app",
+    queryParams: { prompt: "select_account" },
+  },
 });
 ```
 
-The app returns to the active preview origin after Google authentication. That origin must also be present in Supabase **Authentication → URL Configuration → Redirect URLs**.
+The current source constructs the production redirect from `VITE_AUTH_REDIRECT_URL` when configured, otherwise it uses the canonical `https://neulifi.online` origin. Normal sign-in and sign-up return to `/app`, which is the application’s real protected destination; there is no `/dashboard` route. The checkout handoff intentionally uses `/welcome` instead. Both exact URLs must be allowed in Supabase **Authentication → URL Configuration → Redirect URLs** if the checkout handoff is enabled.
 
-### Fix email verification redirects
+### Fix production URL and email redirects
 
-Supabase uses its Auth URL Configuration to decide where email verification links return. In the Supabase dashboard, open **Authentication → URL Configuration** and set:
+Supabase uses **Authentication → URL Configuration** to decide the default destination for email confirmation and password-reset links. Supabase also validates every `redirectTo` value against the Redirect URLs allowlist. In the Supabase Dashboard, set:
 
-| Setting | Value |
+| Setting | Production value |
 | --- | --- |
-| **Site URL** | The public URL of the deployed Nuelifi app or preview, not `http://localhost:3000` unless you are actually testing there. |
-| **Redirect URLs** | Add the exact public preview URL and, if supported by your workflow, its wildcard path such as `https://your-preview-domain.example/**`. |
-| Local development | Add `http://localhost:5173/**` for Vite dev and `http://localhost:4173/**` for the usual Vite preview port. Add `http://localhost:3000/**` only if you truly run the app on port 3000. |
+| **Site URL** | `https://neulifi.online` |
+| **Redirect URLs** | `https://neulifi.online/app` and `https://neulifi.online/welcome` |
+| **Local development** | Add only the exact local callback paths you actually use, such as `http://localhost:5173/app` and `http://localhost:5173/welcome`. |
 
-The frontend now sends `emailRedirectTo: window.location.origin` during signup, or uses `VITE_AUTH_REDIRECT_URL` if you set an explicit public origin. The origin used by the app must also be present in Supabase’s **Redirect URLs** allowlist. After changing these settings, create a new signup request; old verification emails retain their original redirect target.
+Avoid broad wildcards in production. If a temporary preview deployment must support OAuth, add its exact HTTPS callback paths separately and remove them when no longer needed. The frontend sends email confirmation and password-reset redirects based on the same configured auth origin; set `VITE_AUTH_REDIRECT_URL=https://neulifi.online` for an explicit production build, or omit it only when the canonical production fallback is acceptable. After changing these settings, create a new signup request because older verification emails retain their original redirect target.
+
+The exact Supabase provider callback is different from the Nuelifi post-login redirect. The callback is the Google-to-Supabase handoff URI shown on **Authentication → Providers → Google**; `/app` and `/welcome` are the final application destinations after Supabase establishes the session.
 
 ## 6. Security notes
 

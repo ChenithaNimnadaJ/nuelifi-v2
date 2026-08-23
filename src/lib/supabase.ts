@@ -2,12 +2,12 @@ import { createClient, type Session } from "@supabase/supabase-js";
 
 const env = import.meta.env as Record<string, string | undefined>;
 // These are intentionally public Supabase browser values. Keep service-role and AI keys server-side.
-const url = env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || "https://mtfqktpfcwoigmpmdkwh.supabase.co";
-const publishableKey = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10ZnFrdHBmY3dvaWdtcG1ka3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTE2OTQsImV4cCI6MjEwMjgyNzY5NH0.QLvttX-JL1t1EpIl5J0kYPhnWP3PezUk7hu-xNnHGAE";
+const url = String(env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+const publishableKey = String(env.VITE_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "").trim();
 
-export const supabase = createClient(url, publishableKey, {
+export const supabase = url && publishableKey ? createClient(url, publishableKey, {
   auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true, flowType: "pkce" },
-});
+}) : null;
 
 function tokenTimes(accessToken: string) {
   try {
