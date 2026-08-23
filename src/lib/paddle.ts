@@ -9,8 +9,6 @@ export interface Tier {
   description: string;
   features: string[];
   priceId: { year: string };
-  /** Retained for backend recognition of existing monthly records; never shown in the public plan picker. */
-  legacyPriceId?: { month: string };
   planId: PlanId;
 }
 
@@ -33,7 +31,6 @@ export const paddleTiers: Tier[] = [
     description: "More room to understand patterns and keep your momentum going.",
     features: ["3 meal analyses each day", "Meal consistency", "Private meal history", "Referral rewards"],
     priceId: { year: "pri_01m0n2hxhsb9ktr7wrab5h7jkr" },
-    legacyPriceId: { month: "pri_01m0n2etrg948zmj7waaxgt2yp" },
   },
   {
     name: "Premium",
@@ -41,7 +38,6 @@ export const paddleTiers: Tier[] = [
     description: "The complete Neulifi experience for a deeper view of your health rhythm.",
     features: ["5 meal analyses each day", "Meal consistency", "Score stability", "Meal patterns", "Action follow-through", "Referral rewards"],
     priceId: { year: "pri_01m0n2cgc7tjfqg3n2pzmkyvx7" },
-    legacyPriceId: { month: "pri_01m0n27xgae352hc3xjpa69e1d" },
   },
 ];
 

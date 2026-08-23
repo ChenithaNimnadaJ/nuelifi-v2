@@ -1,4 +1,4 @@
-const CACHE_NAME = "neulifi-static-v2";
+const CACHE_NAME = "neulifi-static-v3";
 const APP_SHELL = "/index.html";
 const STATIC_DESTINATIONS = new Set(["script", "style", "image", "font", "manifest"]);
 
@@ -35,11 +35,12 @@ self.addEventListener("fetch", (event) => {
   if (!STATIC_DESTINATIONS.has(request.destination)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request);
-    const network = fetch(request).then((response) => {
-      if (response.ok) void cache.put(request, response.clone());
+    try {
+      const response = await fetch(request, { cache: "no-store" });
+      if (response.ok) await cache.put(request, response.clone());
       return response;
-    }).catch(() => cached || Response.error());
-    return cached || network;
+    } catch {
+      return (await cache.match(request)) || Response.error();
+    }
   })());
 });

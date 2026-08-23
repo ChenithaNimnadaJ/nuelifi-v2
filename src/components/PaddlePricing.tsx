@@ -76,7 +76,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       paddle.Checkout.open({
         items: [{ priceId: tier.priceId.year, quantity: 1 }],
         customer: session?.user?.email ? { email: session.user.email } : undefined,
-        customData: { plan: tier.planId, billing_interval: "year", source: "neulifi", ...(session?.user?.id ? { user_id: session.user.id } : {}) },
+        customData: { billing_interval: "year", source: "neulifi" },
         settings: { displayMode: "overlay", variant: "one-page", successUrl: `${publicOrigin()}/welcome` },
       });
     } catch (value) {
@@ -100,7 +100,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
     <section className="plan-grid plan-grid-premium paddle-plan-grid" aria-label="Neulifi plans">
       {paddleTiers.map((tier) => <PaddlePlanCard key={tier.planId} tier={tier} interval={interval} price={priceLabel(tier)} loading={loading} checkoutPlan={checkoutPlan} onSubscribe={() => void checkout(tier)} />)}
     </section>
-    <section className="pricing-value-story paddle-pricing-note"><div><span className="public-kicker">A CLEARER CHOICE</span><h2>Start small. Keep the useful signal.</h2><p>Neulifi is a nutrition and lifestyle companion, not medical care. It can help you notice patterns and prepare for informed conversations, but it cannot diagnose or prevent disease.</p></div><div className="pricing-value-points"><p><b>Free</b> keeps the essentials open while you build your private history.</p><p><b>Pro</b> gives you more daily room and a better view of movement over time.</p><p><b>Premium</b> brings the fullest analytics and Premium community access.</p></div></section>
+    <section className="pricing-value-story paddle-pricing-note"><div><span className="public-kicker">A CLEARER CHOICE</span><h2>Start small. Keep the useful signal.</h2><p>Neulifi is a nutrition and lifestyle companion, not medical care. It can help you notice patterns and prepare for informed conversations, but it cannot diagnose or prevent disease.</p></div><div className="pricing-value-points"><p><b>Free</b> keeps the essentials open while you build your private history.</p><p><b>Pro</b> gives you more daily room and adds Meal consistency to your private insights.</p><p><b>Premium</b> brings the fullest analytics: Score stability, Meal patterns, and Action follow-through.</p></div></section>
   </main>;
 }
 

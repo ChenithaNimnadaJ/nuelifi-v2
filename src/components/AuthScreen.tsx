@@ -50,6 +50,7 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
     if (!supabase) { setMessage("Account services are not available in this environment."); return; }
     const nextEmail = email.trim();
     if (!nextEmail) { setMessage("Enter your email address first."); return; }
+    if (mode === "signup" && name.trim().length < 2) { setMessage("Enter your name before requesting a sign-in link."); return; }
     setBusy(true);
     setMessage("");
     try {

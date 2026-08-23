@@ -10,6 +10,8 @@ type AdOptions = {
 };
 
 type WindowWithAdOptions = Window & { atOptions?: AdOptions };
+const ADS_CONSENT_KEY = "neulifi-ads-consent";
+let adLoadQueue: Promise<void> = Promise.resolve();
 
 const rectangleOptions: AdOptions = { key: "1c09d4ea208a7363f4640e680e72f2da", format: "iframe", height: 250, width: 300, params: {} };
 const compactOptions: AdOptions = { key: "bf0e160e0990c84b01282775c25440c7", format: "iframe", height: 50, width: 320, params: {} };
@@ -21,27 +23,38 @@ const responsiveScripts = {
 };
 
 function appendScript(slot: HTMLElement, src: string, options: AdOptions) {
-  return new Promise<void>((resolve) => {
-    (window as WindowWithAdOptions).atOptions = options;
+  const loadOne = () => new Promise<void>((resolve) => {
+    const win = window as WindowWithAdOptions;
+    const previous = win.atOptions;
+    win.atOptions = options;
     const script = document.createElement("script");
     script.async = true;
     script.dataset.neulifiAd = "true";
     script.dataset.cfasync = "false";
     script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => resolve();
+    const finish = () => {
+      if (previous === undefined) delete win.atOptions;
+      else win.atOptions = previous;
+      resolve();
+    };
+    script.onload = finish;
+    script.onerror = finish;
     slot.appendChild(script);
   });
+  const next = adLoadQueue.then(loadOne, loadOne);
+  adLoadQueue = next.catch(() => undefined);
+  return next;
 }
 
 export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
   const responsive = slot === "responsive";
+  const [consent, setConsent] = useState(() => typeof window !== "undefined" && window.localStorage.getItem(ADS_CONSENT_KEY) === "granted");
   const [responsiveKey, setResponsiveKey] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 760px)").matches ? wideOptions.key : compactOptions.key);
   const slotId = responsive ? "neulifi-ad-responsive" : "neulifi-ad-rectangle";
 
   useEffect(() => {
     const target = document.getElementById(slotId);
-    if (!target) return;
+    if (!target || !consent) return;
     let active = true;
     const media = responsive ? window.matchMedia("(min-width: 760px)") : null;
     const load = async () => {
@@ -58,10 +71,10 @@ export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
       media?.removeEventListener?.("change", updateResponsive);
       target.replaceChildren();
     };
-  }, [responsive, slotId]);
+  }, [consent, responsive, slotId]);
 
   return <aside className={`free-ad-placement free-ad-placement-${slot}`} aria-label="Sponsored content">
     <div className="free-ad-heading"><span>SUPPORTED BY ADS</span><small>Free plan</small></div>
-    <div className={`free-ad-slot ${responsive ? "free-ad-responsive" : "free-ad-rectangle"}`}><div id={slotId} data-ad-variant={responsive ? responsiveKey : "rectangle"} /></div>
+    {consent ? <div className={`free-ad-slot ${responsive ? "free-ad-responsive" : "free-ad-rectangle"}`}><div id={slotId} data-ad-variant={responsive ? responsiveKey : "rectangle"} /></div> : <div className="free-ad-consent"><p>Optional ads help keep the Free plan available.</p><button className="text-button" type="button" onClick={() => { window.localStorage.setItem(ADS_CONSENT_KEY, "granted"); setConsent(true); }}>Allow sponsored content</button></div>}
   </aside>;
 }

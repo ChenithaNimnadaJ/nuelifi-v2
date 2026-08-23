@@ -7,6 +7,7 @@ type ClaimState = "checking" | "claimed" | "none" | "error";
 export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
   const [claimState, setClaimState] = useState<ClaimState>(signedIn ? "checking" : "none");
   const [claimedPlan, setClaimedPlan] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     if (!signedIn) {
@@ -22,11 +23,12 @@ export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
         if (!active) return;
         if (result.claimed > 0) {
           setClaimedPlan(result.plan === "premium" ? "Premium" : result.plan === "pro" ? "Pro" : null);
+          window.localStorage.removeItem("neulifi-checkout-intent");
           setClaimState("claimed");
           return;
         }
         attempts += 1;
-        if (attempts < 6) {
+        if (attempts < 15) {
           timer = window.setTimeout(() => void check(), 2000);
         } else {
           setClaimState("none");
@@ -40,7 +42,7 @@ export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
       active = false;
       if (timer) window.clearTimeout(timer);
     };
-  }, [signedIn]);
+  }, [signedIn, retryNonce]);
 
   const title = !signedIn ? "Your Neulifi space is ready when you are." : claimState === "claimed" ? "Your plan is connected." : "Welcome back to Neulifi.";
   const message = !signedIn
@@ -51,7 +53,7 @@ export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
         ? `Your ${claimedPlan || "paid"} plan is now linked to this account. You can continue into your private Neulifi space.`
         : claimState === "error"
           ? "We could not check the purchase yet. You can continue to Neulifi and refresh your account shortly."
-          : "No matching purchase is linked yet. If you completed checkout with another email, sign in with that email or wait for Paddle’s notification to arrive.";
+          : "Your purchase is still syncing. If you completed checkout with another email, sign in with that email; otherwise try checking again in a moment.";
 
   return <main className="welcome-page">
     <div className="welcome-card">
@@ -60,7 +62,7 @@ export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
       <h1>{title}</h1>
       <p>{message}</p>
       <div className="welcome-actions">
-        {!signedIn ? <button className="button button-green" type="button" onClick={onSignUp}>Create or sign in <span aria-hidden="true">→</span></button> : <button className="button button-green" type="button" onClick={onContinue}>Continue to Neulifi <span aria-hidden="true">→</span></button>}
+        {!signedIn ? <button className="button button-green" type="button" onClick={onSignUp}>Create or sign in <span aria-hidden="true">→</span></button> : <><button className="button button-green" type="button" onClick={onContinue}>Continue to Neulifi <span aria-hidden="true">→</span></button>{(claimState === "none" || claimState === "error") && <button className="text-button" type="button" onClick={() => { setClaimState("checking"); setRetryNonce((value) => value + 1); }}>Check purchase again</button>}</>}
         <small>Neulifi is a nutrition and lifestyle companion, not medical care.</small>
       </div>
     </div>
