@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import { neulifiApi, type Action, type Dashboard, type LeaderboardEntry, type Meal, type ReferralSummary, type StreakSnapshot, type UsageSnapshot, type User, type UserPreferences } from "./lib/api";
 import { getPlan, type PlanId } from "./lib/plans";
 import { Analysing, MealCapture, MealPreview, MealResults, type MealDraft, type ResultAction } from "./components/MealFlow";
 import { AuthScreen } from "./components/AuthScreen";
 import { Onboarding, type OnboardingValues } from "./components/Onboarding";
-import { PublicSite } from "./components/PublicSite";
 import { Welcome } from "./components/Welcome";
-import { PaddleCheckoutLink } from "./components/PaddleCheckoutLink";
 import { UpgradeModal } from "./components/UpgradeModal";
 import { BrandMark } from "./components/BrandMark";
 import { getHealthySession, supabase } from "./lib/supabase";
@@ -20,6 +18,8 @@ function publicPageFromPath(pathname: string): PublicPage | null { if (pathname 
 function authModeFromPath(pathname: string): "signin" | "signup" | null { if (pathname === "/login") return "signin"; if (pathname === "/signup") return "signup"; return null; }
 function authReturnMessage() { const params = new URLSearchParams(window.location.search); const error = params.get("error_description") || params.get("error") || params.get("error_code"); if (!error) return ""; return /cancel|denied/i.test(error) ? "Google sign-in was cancelled. You can try again whenever you’re ready." : "We could not complete sign-in. Please try again or use email sign-in."; }
 function isPasswordRecovery() { return new URLSearchParams(window.location.search).get("reset") === "1"; }
+const LazyPublicSite = lazy(() => import("./components/PublicSite").then(({ PublicSite }) => ({ default: PublicSite })));
+const LazyPaddleCheckoutLink = lazy(() => import("./components/PaddleCheckoutLink").then(({ PaddleCheckoutLink }) => ({ default: PaddleCheckoutLink })));
 const AUTH_RETURN_PATH_KEY = "neulifi-auth-return-path";
 function safeAuthReturnPath() { const stored = window.localStorage.getItem(AUTH_RETURN_PATH_KEY) || "/app"; window.localStorage.removeItem(AUTH_RETURN_PATH_KEY); return stored === "/welcome" ? "/welcome" : "/app"; }
 type DataState = "loading" | "ready" | "error";
@@ -138,9 +138,9 @@ export default function App() {
   if (!authReady) return <div className="auth-loading">Loading your private Neulifi space…</div>;
   if (isPasswordRecovery()) return <AuthScreen passwordRecovery initialMessage={authReturnMessage()} themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={completeAuthRedirect}/>
   if (window.location.pathname === "/welcome") return <Welcome signedIn={Boolean(sessionUser)} onContinue={enterAuthenticatedApp} onSignUp={() => navigateAuth("signup", "/welcome")}/>;
-  if (window.location.pathname === "/checkout") return <PaddleCheckoutLink/>;
-  if (publicPageFromPath(window.location.pathname)) return <PublicSite page={publicPage} onNavigate={navigatePublic} onAuth={navigateAuth} />;
-  if (supabase && !sessionUser) { if (authMode || window.location.pathname === "/app") return <AuthScreen initialMode={authMode || "signin"} initialMessage={authReturnMessage()} themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={completeAuthRedirect} />; return <PublicSite page={publicPage} onNavigate={navigatePublic} onAuth={navigateAuth} />; }
+  if (window.location.pathname === "/checkout") return <Suspense fallback={<div className="auth-loading">Preparing secure checkout…</div>}><LazyPaddleCheckoutLink /></Suspense>;
+  if (publicPageFromPath(window.location.pathname)) return <Suspense fallback={<div className="auth-loading">Loading Neulifi…</div>}><LazyPublicSite page={publicPage} onNavigate={navigatePublic} onAuth={navigateAuth} /></Suspense>;
+  if (supabase && !sessionUser) { if (authMode || window.location.pathname === "/app") return <AuthScreen initialMode={authMode || "signin"} initialMessage={authReturnMessage()} themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={completeAuthRedirect} />; return <Suspense fallback={<div className="auth-loading">Loading Neulifi…</div>}><LazyPublicSite page={publicPage} onNavigate={navigatePublic} onAuth={navigateAuth} /></Suspense>; }
   if (supabase && sessionUser && dataState === "loading") return <div className="auth-loading">Loading your private Neulifi space…</div>;
   if (supabase && sessionUser && onboardingRequired) return <Onboarding initialName={profile.name || sessionUser.name || ""} initialPreferences={profile.preferences} onComplete={completeOnboarding}/>;
   const isMealFlow = ["meal-preview", "analysing", "meal-result"].includes(screen);
