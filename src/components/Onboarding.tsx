@@ -8,7 +8,8 @@ const dietOptions = ["No preference", "Vegetarian", "Vegan", "Pescatarian", "Hal
 const activityOptions = ["Mostly sitting", "Lightly active", "Active most days", "Very active"];
 const regionOptions: { value: RegionId; label: string }[] = [{ value: "global", label: "Prefer not to say" }, { value: "south-asia", label: "South Asia" }, { value: "east-asia", label: "East Asia" }, { value: "southeast-asia", label: "Southeast Asia" }, { value: "europe", label: "Europe" }, { value: "north-america", label: "North America" }, { value: "latin-america", label: "Latin America" }, { value: "mena", label: "Middle East and North Africa" }, { value: "sub-saharan-africa", label: "Sub-Saharan Africa" }];
 const listValue = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 12);
-const initialContext = (preferences: UserPreferences): HealthContext => preferences.healthContext || { conditions: [], allergies: [], notes: "" };
+const contextList = (value: unknown) => Array.isArray(value) ? value.map(String).map((item) => item.trim()).filter(Boolean).slice(0, 12) : [];
+const initialContext = (preferences: UserPreferences): HealthContext => { const saved = preferences.healthContext as Partial<HealthContext> | null | undefined; return { conditions: contextList(saved?.conditions), allergies: contextList(saved?.allergies), notes: typeof saved?.notes === "string" ? saved.notes.trim().slice(0, 600) : "" }; };
 
 export function Onboarding({ initialName = "", initialPreferences = {}, onComplete }: { initialName?: string; initialPreferences?: UserPreferences; onComplete: (values: OnboardingValues) => Promise<void> }) {
   const [step, setStep] = useState(0);
