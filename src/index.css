@@ -11,7 +11,7 @@
   --blue: #287eae; --blue-soft: #e8f3f9; --amber: #a86b19; --amber-soft: #fff0d3; --orange: #c47724; --orange-soft: #fff0e4;
   --hero: #14221a; --hero-text: #f7fcf8; --hero-muted: #afc0b5; --hero-track: #3c4b41;
   --dashboard-card: #ffffff; --dashboard-card-text: #14201a; --dashboard-card-muted: #66746b; --dashboard-card-track: #dfe9e2;
-  --chart-line: #29ae70; --chart-point-outline: #ffffff;
+  --chart-line: #29ae70; --chart-grid: rgba(20, 32, 26, .12); --chart-point-outline: #ffffff;
   --danger: #a46132; --danger-bg: #fff6ed; --danger-border: #f0d9bf;
   --shadow: 0 12px 36px rgba(22, 55, 35, .07); --shadow-soft: 0 2px 8px rgba(20, 45, 29, .05);
   --radius-lg: 20px; --radius-md: 16px; --radius-sm: 12px;
@@ -26,7 +26,7 @@
   --blue: #74c7ef; --blue-soft: #142d3a; --amber: #f1bd5b; --amber-soft: #3d2e16; --orange: #f1a35c; --orange-soft: #3a2518;
   --hero: #060c08; --hero-text: #f6fff8; --hero-muted: #b3c5b8; --hero-track: #304137;
   --dashboard-card: #111a14; --dashboard-card-text: #edf7f0; --dashboard-card-muted: #a6b7ab; --dashboard-card-track: #304137;
-  --chart-line: #5fe09a; --chart-point-outline: #111a14;
+  --chart-line: #5fe09a; --chart-grid: rgba(255, 255, 255, .14); --chart-point-outline: #111a14;
   --danger: #f0aa73; --danger-bg: #38251a; --danger-border: #67452d;
   --shadow: 0 18px 44px rgba(0, 0, 0, .22); --shadow-soft: 0 2px 10px rgba(0, 0, 0, .16);
 }
@@ -128,7 +128,7 @@ h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 .completed-task .task-title { color: var(--faint); text-decoration: line-through; }
 
 .insight-stats { margin-top: 18px; max-width: 820px; } .insight-stats .stat-card { min-height: 82px; } .insight-stats .stat-card strong { margin-top: auto; } .insight-stats .stat-card strong small { font-size: 10px; } .green-text { color: var(--brand); } .blue-text { color: var(--blue); } .orange-text { color: var(--orange); }
-.chart-card { margin-bottom: 22px; max-width: 820px; } .chart { display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: clamp(140px, 25vw, 190px) 18px; margin-top: 19px; } .chart-y, .chart-x { color: var(--faint); display: flex; font-size: 9px; justify-content: space-between; } .chart-y { flex-direction: column; padding: 4px 0; } .chart svg { height: 100%; overflow: visible; width: 100%; } .chart-x { grid-column: 2; padding-top: 5px; }
+.chart-card { margin-bottom: 22px; max-width: 820px; } .chart-heading { align-items: flex-end; display: flex; gap: 18px; justify-content: space-between; } .chart-heading h3 { color: var(--text-strong); } .chart-heading small { color: var(--muted); display: block; font-size: 10px; margin-top: 5px; } .chart-current-value { color: var(--chart-line); font: 700 clamp(22px, 4vw, 30px)/1 Geist, Inter, sans-serif; letter-spacing: -.06em; white-space: nowrap; } .chart-current-value small { color: var(--muted); display: inline; font: 500 10px/1 Inter, sans-serif; letter-spacing: 0; margin-left: 2px; } .chart { display: grid; grid-template-columns: 32px minmax(0, 1fr); grid-template-rows: clamp(156px, 22vw, 196px) 20px; margin-top: 15px; } .chart-y, .chart-x { color: var(--faint); display: flex; font-size: 10px; justify-content: space-between; } .chart-y { flex-direction: column; padding: 8px 0 0; } .chart svg { height: 100%; overflow: visible; width: 100%; } .chart-x { gap: 8px; grid-column: 2; padding-top: 7px; } .chart-x span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .chart-x span:not(:last-child) { text-align: left; } .chart-x span:last-child { text-align: right; } .chart-end-label { fill: var(--chart-line); font: 700 10px/1 Inter, sans-serif; }
 .meal-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; max-width: 820px; } .meal-list-row { align-items: center; background: transparent; border: 0; cursor: pointer; display: flex; gap: 10px; min-width: 0; padding: 6px 0; text-align: left; width: 100%; } .meal-list-row:hover { color: var(--brand-strong); } .meal-list-row img { aspect-ratio: 1; border-radius: 11px; height: 43px; object-fit: cover; width: 43px; } .meal-list-row > div { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; } .meal-list-row strong { font-size: 12px; overflow-wrap: anywhere; } .meal-list-row small { color: var(--muted); font-size: 10px; }
 .notice-card { align-items: flex-start; display: flex; gap: 12px; } .notice-star { align-items: center; background: var(--amber-soft); border-radius: 50%; color: var(--amber); display: flex; font-size: 18px; height: 34px; justify-content: center; width: 34px; } .notice-card p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 7px 0 0; }
 
@@ -1104,10 +1104,10 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 /* Focused chart and affiliate-card proportion correction. */
 .chart-card { min-width: 0; padding: clamp(16px, 2.4vw, 22px); }
 .chart-card h3 { margin-bottom: 0; }
-.chart { grid-template-rows: clamp(118px, 18vw, 152px) 20px; margin-top: 15px; }
+.chart { grid-template-rows: clamp(156px, 22vw, 196px) 20px; margin-top: 15px; }
 .chart-y, .chart-x { font-size: 10px; line-height: 1; }
 .chart-x { gap: 8px; min-width: 0; overflow: hidden; }
-.chart-x span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart-x span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .affiliate-card { align-items: center; gap: 18px; }
 .affiliate-card > div { min-width: 0; }
 .affiliate-card h3 { color: var(--text-strong); font: 700 clamp(22px, 3vw, 28px)/1.05 Geist, Inter, sans-serif; letter-spacing: -.04em; margin: 6px 0 5px; }
