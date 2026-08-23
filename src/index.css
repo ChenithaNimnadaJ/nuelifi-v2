@@ -977,3 +977,21 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .checkout-link-card h1 { margin: 12px 0 14px; }
 .checkout-link-card p { color: var(--muted); line-height: 1.7; margin: 0 auto 24px; max-width: 420px; }
 .checkout-link-card .button { display: inline-flex; }
+
+/* Verified affiliate commission disclosure: customer-safe rates and monthly progress only. */
+.referral-rate-card { margin-top: 18px; padding: 20px; }
+.referral-rate-heading { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+.referral-rate-heading h2 { color: var(--text-strong); font-family: Geist, Inter, sans-serif; font-size: clamp(20px, 3vw, 27px); letter-spacing: -.05em; line-height: 1.05; margin: 8px 0 0; }
+.referral-monthly-count { background: var(--brand-soft); border-radius: 999px; color: var(--brand-strong); flex: 0 0 auto; font-size: 11px; font-weight: 800; padding: 8px 10px; white-space: nowrap; }
+.referral-rate-grid { display: grid; gap: 1px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; overflow: hidden; }
+.referral-rate-grid > div { background: var(--surface-soft); border: 1px solid var(--border); margin: -1px 0 0 -1px; min-height: 112px; padding: 14px; }
+.referral-rate-grid strong { color: var(--brand-strong); display: block; font-family: Geist, Inter, sans-serif; font-size: 25px; letter-spacing: -.06em; }
+.referral-rate-grid span { color: var(--muted); display: block; font-size: 11px; line-height: 1.5; margin-top: 8px; }
+.referral-progress { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 15px; }
+.referral-progress > div { align-items: baseline; display: flex; gap: 12px; justify-content: space-between; }
+.referral-progress > div span { color: var(--muted); font-size: 11px; }
+.referral-progress > div b { color: var(--text-strong); font-size: 12px; }
+.referral-progress-track { background: var(--surface-soft); border: 1px solid var(--border); border-radius: 999px; display: block; height: 8px; margin-top: 9px; overflow: hidden; }
+.referral-progress-track i { background: var(--brand); border-radius: inherit; display: block; height: 100%; min-width: 0; }
+@media (max-width: 760px) { .referral-rate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .referral-rate-card { padding: 17px; } .referral-rate-heading { flex-direction: column; gap: 11px; } .referral-rate-grid { grid-template-columns: 1fr; } .referral-rate-grid > div { min-height: 0; } }

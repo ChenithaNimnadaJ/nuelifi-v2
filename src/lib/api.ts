@@ -14,7 +14,7 @@ export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; ac
 export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
 export interface StreakSnapshot { currentStreak: number; longestStreak: number; lastActivityDate: string | null; }
 export interface LeaderboardEntry { rank: number; userId: string; displayName: string; score: number; isCurrent: boolean; }
-export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; }
+export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; standardProCommission: number; standardPremiumCommission: number; highVolumeProCommission: number; highVolumePremiumCommission: number; highVolumeThreshold: number; }
 
 const configuredApiUrl = String(import.meta.env.VITE_API_URL || "").trim();
 const API_URL = import.meta.env.MODE === "production" && /^(https?:)?\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredApiUrl) ? "" : configuredApiUrl.replace(/\/+$/, "");
