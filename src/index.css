@@ -583,9 +583,17 @@ h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 .public-site .public-plate { background: radial-gradient(circle at 50% 45%, #eaf1de 0 36%, #c4d4b8 37% 41%, #849e84 42% 44%, transparent 45%), radial-gradient(circle at 50% 50%, #365541 0 62%, #294735 63% 65%, transparent 66%); border-radius: 50%; height: min(31vw, 340px); margin: 53px auto 0; max-height: 340px; max-width: 340px; min-height: 230px; min-width: 230px; position: relative; width: min(31vw, 340px); }
 .public-site .public-plate-food { border-radius: 50%; box-shadow: 0 10px 17px rgba(0,0,0,.17); color: rgba(15, 36, 22, .78); display: flex; font-family: Geist, Inter, sans-serif; font-size: clamp(10px, 1.2vw, 14px); font-weight: 650; justify-content: center; padding-top: 26px; position: absolute; text-align: center; }
 .public-site .public-food-rice { background: #f3ead2; height: 42%; left: 31%; top: 17%; width: 39%; }
-.public-site .public-food-curry { background: #c87f44; color: #fff4df; height: 31%; left: 14%; top: 43%; width: 36%; }
-.public-site .public-food-dhal { background: #e1b850; height: 30%; right: 13%; top: 42%; width: 35%; }
+.public-site .public-food-chicken { background: #c87f44; color: #fff4df; height: 31%; left: 14%; top: 43%; width: 36%; }
+.public-site .public-food-beans { background: #9a684e; color: #fff4df; height: 30%; right: 13%; top: 42%; width: 35%; }
 .public-site .public-food-greens { background: #629a63; color: #eff9e8; height: 28%; left: 36%; top: 62%; width: 31%; }
+@keyframes public-plate-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.012); } }
+@keyframes public-food-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.public-site .public-plate { animation: public-plate-breathe 7s ease-in-out infinite; transform-origin: center; }
+.public-site .public-plate-food { animation: public-food-float 5.5s ease-in-out infinite; transform-origin: center; }
+.public-site .public-food-chicken { animation-delay: -.8s; }
+.public-site .public-food-beans { animation-delay: -2.1s; }
+.public-site .public-food-greens { animation-delay: -3.4s; }
+@media (prefers-reduced-motion: reduce) { .public-site .public-plate, .public-site .public-plate-food { animation: none !important; } }
 .public-site .public-visual-footnote { bottom: 21px; color: #afc5b4; font-size: 10px; left: 30px; margin: 0; position: absolute; }
 .public-site .public-signal-list { border-top: 1px solid rgba(255,255,255,.14); margin-top: 28px; max-width: 510px; }
 .public-site .public-signal { align-items: center; border-bottom: 1px solid rgba(255,255,255,.14); display: flex; justify-content: space-between; padding: 14px 0; }
@@ -641,7 +649,8 @@ h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 .public-site .feature-grid-redesigned .feature-card:nth-child(n+4) { border-top: 0; }
 .public-site .feature-grid-redesigned .feature-card:not(:nth-child(3n+1)) { border-left: 0; padding-left: 24px; }
 .public-site .feature-grid-redesigned .feature-card h2 { margin-top: 65px; }
-.public-site .feature-grid-redesigned .feature-card p { max-width: 300px; }
+.public-site .feature-grid-redesigned .feature-card { text-align: center; }
+.public-site .feature-grid-redesigned .feature-card p { margin-left: auto; margin-right: auto; max-width: 300px; }
 @media (max-width: 1050px) {
   .public-site .public-hero-premium { grid-template-columns: minmax(0, .9fr) minmax(390px, 1.1fr); }
   .public-site .public-loop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
