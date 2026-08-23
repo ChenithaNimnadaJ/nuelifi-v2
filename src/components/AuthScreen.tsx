@@ -26,6 +26,14 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
 
   useEffect(() => { if (initialEmail) setEmail(initialEmail); }, [initialEmail]);
   useEffect(() => { setMessage(initialMessage); }, [initialMessage]);
+  useEffect(() => {
+    const resetAfterOAuthReturn = () => { if (document.visibilityState === "visible") setBusy(false); };
+    window.addEventListener("pageshow", resetAfterOAuthReturn);
+    window.addEventListener("focus", resetAfterOAuthReturn);
+    window.addEventListener("popstate", resetAfterOAuthReturn);
+    document.addEventListener("visibilitychange", resetAfterOAuthReturn);
+    return () => { window.removeEventListener("pageshow", resetAfterOAuthReturn); window.removeEventListener("focus", resetAfterOAuthReturn); window.removeEventListener("popstate", resetAfterOAuthReturn); document.removeEventListener("visibilitychange", resetAfterOAuthReturn); };
+  }, []);
 
   const returnPath = window.localStorage.getItem("neulifi-auth-return-path") === "/welcome" ? "/welcome" : "/app";
   const configuredAuthOrigin = String(import.meta.env.VITE_AUTH_REDIRECT_URL || "").trim().replace(/\/+$/, "");
@@ -43,6 +51,7 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
     try {
       const result = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo, queryParams: { prompt: "select_account" } } });
       if (result.error) { setBusy(false); setMessage(/cancel|denied/i.test(result.error.message) ? "Google sign-in was cancelled. You can try again whenever you’re ready." : "Google sign-in could not be started. Please try again."); }
+      else if (!result.data?.url) { setBusy(false); setMessage("Google sign-in could not be started. Please try again."); }
     } catch (value) { setBusy(false); setMessage(value instanceof Error ? value.message : "Google sign-in could not be started. Please try again."); }
   };
 
