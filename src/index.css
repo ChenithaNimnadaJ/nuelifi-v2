@@ -1058,3 +1058,25 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .result-action-copy small { color: var(--muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
 .result-action.completed .result-action-copy strong { color: var(--faint); text-decoration: line-through; }
 .result-action.completed .result-action-copy small { color: var(--faint); }
+
+
+/* Free-plan ad placement: only the selected banner formats remain, each in a restrained product-aware slot. */
+.free-ad-placement { align-items: center; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 16px; display: flex; flex-direction: column; gap: 8px; margin: 14px 0 18px; max-width: 100%; overflow: hidden; padding: 10px; width: 100%; }
+.free-ad-placement .free-ad-heading { align-items: baseline; align-self: stretch; display: flex; justify-content: space-between; }
+.free-ad-placement .free-ad-heading span { color: var(--faint); font-size: 8px; font-weight: 800; letter-spacing: .12em; }
+.free-ad-placement .free-ad-heading small { color: var(--muted); font-size: 9px; }
+.free-ad-placement .free-ad-slot { border: 0; border-radius: 10px; margin: 0; min-height: 0; padding: 0; width: 100%; }
+.free-ad-placement-responsive .free-ad-slot { height: 90px; max-width: 728px; }
+.free-ad-placement-rectangle { align-items: stretch; }
+.free-ad-placement-rectangle .free-ad-slot { height: 250px; max-width: 300px; }
+@media (min-width: 1280px) {
+  .home-screen > .free-ad-placement-responsive { grid-column: 1 / -1; }
+  .home-screen > .free-ad-placement-rectangle { align-self: start; grid-column: 2 / 3; grid-row: auto; margin-top: 18px; }
+  .home-screen > .streak-card { grid-column: 1 / 2; }
+  .home-screen > .home-tool-links, .home-screen > .capture-card { grid-column: 1 / -1; }
+}
+@media (max-width: 759px) {
+  .free-ad-placement-responsive .free-ad-slot { height: 50px; max-width: 320px; }
+  .free-ad-placement { margin: 12px 0 16px; padding: 8px; }
+  .free-ad-placement-rectangle { margin-top: 10px; }
+}
