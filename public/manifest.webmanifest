@@ -10,6 +10,12 @@
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "/neulifi-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
       "src": "/neulifi-logo.png",
       "sizes": "512x512",
       "type": "image/png",
