@@ -8,7 +8,7 @@ export interface HealthContext { conditions: string[]; allergies: string[]; note
 export interface UserPreferences { notifications?: boolean; dailyReminders?: boolean; weeklySummary?: boolean; appearance?: "system" | "light" | "dark"; onboardingCompleted?: boolean; dietaryPreference?: string; activityLevel?: string; healthContext?: HealthContext; region?: RegionId; timezone?: string; leaderboardOptIn?: boolean; referralCode?: string; [key: string]: unknown; }
 export interface MealAnalysis { rating: MealRating; score: number; indicators: Record<string, number>; explanation: string; mealGuidance: string[]; dailyTasks: string[]; dailyTaskReasons?: string[]; recommendations?: string[]; }
 export interface User { id: string; email: string; name: string; goals: string[]; preferences?: UserPreferences; region?: RegionId; timezone?: string; leaderboardOptIn?: boolean; neulifiScore?: number; }
-export interface Meal { id: string; userId: string; imageUrl: string; mealName: string; capturedAt: string; status: "analysed"; analysis: MealAnalysis; }
+export interface Meal { id: string; userId: string; imageUrl: string; imageUrls?: string[]; mealName: string; capturedAt: string; status: "analysed"; analysis: MealAnalysis; }
 export interface Action { id: string; userId: string; mealId: string | null; title: string; description?: string; completed: boolean; status?: ActionStatus; dueAt?: string | null; createdAt: string; completedAt: string | null; }
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
 export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
@@ -42,8 +42,8 @@ export const neulifiApi = {
   profile: (userId: string) => request<User>(`/api/users/${userId}/profile`),
   updateProfile: (userId: string, input: Partial<Pick<User, "name" | "goals" | "preferences" | "region" | "timezone" | "leaderboardOptIn">>) => request<User>(`/api/users/${userId}/profile`, { method: "PATCH", body: JSON.stringify(input) }),
   meals: (userId: string) => request<Meal[]>(`/api/users/${userId}/meals`),
-  analyseMeal: (userId: string, imageUrl: string, mealName?: string, context?: { goals: string[]; preferences: UserPreferences }, eventKey?: string) => request<Meal & { provider?: string }>(`/api/analyze`, { method: "POST", body: JSON.stringify({ userId, imageUrl, mealName, context, eventKey }) }),
-  persistMeal: (input: { userId: string; eventKey: string; imageUrl: string; mealName: string; capturedAt: string; provider?: string; analysis: MealAnalysis }) => request<{ id: string }>(`/api/persist-meal`, { method: "POST", body: JSON.stringify(input) }),
+  analyseMeal: (userId: string, imageUrls: string[] | string, mealName?: string, context?: { goals: string[]; preferences: UserPreferences }, eventKey?: string) => { const images = Array.isArray(imageUrls) ? imageUrls : [imageUrls]; return request<Meal & { provider?: string; imageUrls?: string[] }>(`/api/analyze`, { method: "POST", body: JSON.stringify({ userId, imageUrl: images[0], imageUrls: images, mealName, context, eventKey }) }); },
+  persistMeal: (input: { userId: string; eventKey: string; imageUrl: string; imageUrls?: string[]; mealName: string; capturedAt: string; provider?: string; analysis: MealAnalysis }) => request<{ id: string }>(`/api/persist-meal`, { method: "POST", body: JSON.stringify(input) }),
   actions: (userId: string) => request<Action[]>(`/api/users/${userId}/actions`),
   completeAction: (actionId: string, completed = true) => request<Action>(`/api/actions/${actionId}`, { method: "PATCH", body: JSON.stringify({ completed }) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),

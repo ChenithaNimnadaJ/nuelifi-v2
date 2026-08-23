@@ -36,7 +36,8 @@ Then replace the placeholders in `.env.local`.
 | `SUPABASE_SERVICE_ROLE_KEY` | Privileged server operations | **Private** | Replace only in the backend secret store |
 | `GROQ_API_KEY` | Server-side meal analysis | **Private** | Replace only in the backend secret store |
 | `GROQ_MODEL` | Server-side meal analysis | Configuration | `qwen/qwen3.6-27b` |
-| `GEMINI_API_KEY` | Optional server-side fallback | **Private** | Replace only in the backend secret store |
+| `GEMINI_API_KEY` | Free-tier Gemini key 1 | **Private** | Replace only in the backend secret store |
+| `GEMINI_API_KEY_2` | Free-tier Gemini key 2 / redundancy | **Private** | Replace only in the backend secret store |
 
 The browser client supports both `VITE_*` and `NEXT_PUBLIC_*` Supabase public names. The Vite build maps the Next-style aliases when a deployment platform provides those names.
 
@@ -67,11 +68,12 @@ SUPABASE_SERVICE_ROLE_KEY
 GROQ_API_KEY
 GROQ_MODEL=qwen/qwen3.6-27b
 GEMINI_API_KEY
-GEMINI_MODEL=gemini-3.7-flash
-GEMINI_FALLBACK_MODELS=gemini-3.5-flash,gemini-2.5-flash
+GEMINI_API_KEY_2
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_FALLBACK_MODELS=gemini-3.1-flash-lite,gemini-2.5-flash-lite,gemini-3.7-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-2.5-flash
 ```
 
-The frontend and backend must use the same Supabase project. The frontend should never receive `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, or `GEMINI_API_KEY`.
+The frontend and backend must use the same Supabase project. The frontend should never receive `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, or `GEMINI_API_KEY_2`. Both Gemini credentials are Free Tier credentials; this implementation does not configure or use a paid Gemini API.
 
 ## 4. Start locally
 
@@ -82,7 +84,7 @@ pnpm run backend
 pnpm run dev
 ```
 
-The current application uses the backend for server-side meal analysis and Supabase for authenticated profile, meal, analysis, action, and subscription persistence. The frontend sends the Supabase access token to the backend. With `REQUIRE_AUTH=true`, the backend rejects unauthenticated user-scoped requests with HTTP 401 and verifies that the token user matches the requested user ID.
+The current application uses the backend for server-side meal analysis and Supabase for authenticated profile, meal, analysis, action, and subscription persistence. The frontend sends the Supabase access token to the backend. With `REQUIRE_AUTH=true`, the backend rejects unauthenticated user-scoped requests with HTTP 401 and verifies that the token user matches the requested user ID. Gemini requests are free-first and stay server-side: the Worker tries the configured model sequence with Free Tier key 1, then key 2, using bounded retries and short-lived model/key cooldowns. There is no paid Gemini fallback.
 
 On a fresh configured preview with no existing Supabase session, the application opens **Start your Nuelifi journey** and shows the sign-up form. After successful sign-up or sign-in, Supabase Auth establishes the session and the frontend loads the signed-in user’s private data. Demo data is available only through the explicit **Continue with preview data** link.
 
@@ -123,4 +125,4 @@ The frontend now sends `emailRedirectTo: window.location.origin` during signup, 
 
 ## 6. Security notes
 
-Never commit `.env.local` or any real server secret. Never place a service-role, Groq, or Gemini key in `src/`, `VITE_*`, `NEXT_PUBLIC_*`, or browser code. Public Supabase values are designed for browser use only when Row Level Security is enabled. Rotate any credential that has been shared outside the intended secret-management workflow.
+Never commit `.env.local` or any real server secret. Never place a service-role, Groq, or either Gemini key in `src/`, `VITE_*`, `NEXT_PUBLIC_*`, or browser code. Public Supabase values are designed for browser use only when Row Level Security is enabled. Rotate any credential that has been shared outside the intended secret-management workflow. Replacing either Gemini key requires only updating the corresponding Worker secret and redeploying; no source change is required.

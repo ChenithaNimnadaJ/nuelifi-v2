@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Meal, RegionId } from "../lib/api";
 import { getMealExamples } from "../lib/regionalExamples";
 
-export interface MealDraft { imageUrl: string; mealName: string; }
+export interface MealDraft { imageUrls: string[]; imageUrl: string; mealName: string; }
 export interface ResultAction { id: string; title: string; detail: string; completed: boolean; added: boolean; }
 
 const icon = (name: string, size = 18) => { const paths: Record<string, string> = { camera: "M4 7.5h3l1.2-2h7.6l1.2 2h3A1.8 1.8 0 0 1 22 9.3v9.2a1.8 1.8 0 0 1-1.8 1.8H3.8A1.8 1.8 0 0 1 2 18.5V9.3a1.8 1.8 0 0 1 1.8-1.8zM12 17a3.6 3.6 0 1 0 0-7.2A3.6 3.6 0 0 0 12 17z", upload: "M12 16V4m0 0L7 9m5-5 5 5M4 20h16", check: "M20 6 9 17l-5-5", arrow: "m9 18 6-6-6-6", leaf: "M20 4C11 4 5 8 5 14c0 3 2 5 5 5 6 0 10-6 10-15zM4 21c2-5 6-8 11-11" }; return <svg className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={paths[name] || paths.leaf}/></svg>; };
@@ -37,27 +37,17 @@ function imageFileToDataUrl(file: File): Promise<string> {
 
 export function MealCapture({ onReady, region = "global" }: { onReady: (draft: MealDraft) => void; region?: RegionId }) {
   const examples = getMealExamples(region);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [preparing, setPreparing] = useState(false);
-  const chooseFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setPreparing(true);
-    try {
-      setSelected(await imageFileToDataUrl(file));
-      setName(file.name.replace(/\.[^/.]+$/, ""));
-    } finally {
-      setPreparing(false);
-      event.target.value = "";
-    }
-  };
-  const chooseExample = (example: typeof examples[number]) => { setSelected(example.image); setName(example.name); };
-  return <div className="screen"><p className="screen-intro">Take a photo or upload an image of your meal. Neulifi gives you a clear, honest assessment with practical next steps — no guilt, just useful information.</p><div className="upload-zone">{selected ? <img src={selected} alt="Selected meal"/> : <><span className="upload-icon">{icon("camera", 28)}</span><strong>{preparing ? "Preparing your meal photo…" : "Your meal photo will appear here"}</strong><small>{preparing ? "Optimising the image for a reliable scan" : "Use the options below to add a photo"}</small></>}</div><div className="upload-actions"><label className="button button-dark">{icon("camera", 17)} Take photo<input className="sr-only" type="file" accept="image/*" capture="environment" onChange={(event) => { void chooseFile(event); }}/></label><label className="button button-soft">{icon("upload", 17)} Upload<input className="sr-only" type="file" accept="image/*" onChange={(event) => { void chooseFile(event); }}/></label></div><p className="or-label">OR TRY AN EXAMPLE</p><div className="example-row">{examples.map((example) => <button type="button" key={example.name} aria-pressed={selected === example.image} onClick={() => chooseExample(example)} aria-label={`Use example: ${example.name}`}><img src={example.image} alt={example.name}/></button>)}</div>{selected && <button type="button" className="button button-green analyse-submit" onClick={() => onReady({ imageUrl: selected, mealName: name || "New meal" })} disabled={preparing}>{preparing ? "Preparing…" : "Analyse meal"} <span>{icon("arrow", 17)}</span></button>}</div>;
+  const chooseFile = async (event: React.ChangeEvent<HTMLInputElement>) => { const files = Array.from(event.target.files || []).slice(0, 4); if (!files.length) return; setPreparing(true); try { const images = await Promise.all(files.map((file) => imageFileToDataUrl(file))); const unique = [...new Set(images)].slice(0, 4); setSelected(unique); setName(files[0].name.replace(/\.[^/.]+$/, "")); } finally { setPreparing(false); event.target.value = ""; } };
+  const chooseExample = (example: typeof examples[number]) => { setSelected([example.image]); setName(example.name); };
+  return <div className="screen"><p className="screen-intro">Take up to four photos or upload images of your meal. Neulifi combines them into one clear, honest assessment with practical next steps — no guilt, just useful information.</p><div className="upload-zone">{selected.length ? <div className="capture-image-grid">{selected.map((image, index) => <img key={`${image}-${index}`} src={image} alt={`Selected meal photo ${index + 1}`}/>)}</div> : <><span className="upload-icon">{icon("camera", 28)}</span><strong>{preparing ? "Preparing your meal photos…" : "Your meal photos will appear here"}</strong><small>{preparing ? "Optimising the images for a reliable scan" : "Use the options below to add up to four photos"}</small></>}</div><div className="upload-actions"><label className="button button-dark">{icon("camera", 17)} Take photo<input className="sr-only" type="file" accept="image/*" capture="environment" multiple onChange={(event) => { void chooseFile(event); }}/></label><label className="button button-soft">{icon("upload", 17)} Upload<input className="sr-only" type="file" accept="image/*" multiple onChange={(event) => { void chooseFile(event); }}/></label></div><p className="or-label">OR TRY AN EXAMPLE</p><div className="example-row">{examples.map((example) => <button type="button" key={example.name} aria-pressed={selected.includes(example.image)} onClick={() => chooseExample(example)} aria-label={`Use example: ${example.name}`}><img src={example.image} alt={example.name}/></button>)}</div>{selected.length > 0 && <><small className="capture-count">{selected.length} of 4 photos ready</small><button type="button" className="button button-green analyse-submit" onClick={() => onReady({ imageUrls: selected, imageUrl: selected[0], mealName: name || "New meal" })} disabled={preparing}>{preparing ? "Preparing…" : "Analyse meal"} <span>{icon("arrow", 17)}</span></button></>}</div>;
 }
-
-export function MealPreview({ draft, onRetake, onAnalyse, error = "" }: { draft: MealDraft; onRetake: () => void; onAnalyse: () => void; error?: string }) { return <div className="screen flow-screen">{error && <div className="data-note data-error" role="alert">{error}</div>}<p className="screen-intro">Make sure your entire meal is visible before continuing.</p><div className="preview-image-wrap"><img src={draft.imageUrl} alt="Meal preview"/><span className="preview-chip">Photo preview</span></div><h2 className="flow-meal-name">{draft.mealName}</h2><p className="muted flow-help">Neulifi will use this image to prepare a simple assessment and practical next steps.</p><div className="flow-actions"><button type="button" className="button button-soft" onClick={onRetake}>Retake</button><button type="button" className="button button-dark" onClick={onAnalyse}>Analyse meal {icon("arrow", 16)}</button></div></div>; }
-
+export function MealPreview({ draft, onRetake, onAnalyse, error = "" }: { draft: MealDraft; onRetake: () => void; onAnalyse: () => void; error?: string }) {
+  const images = draft.imageUrls?.length ? draft.imageUrls : [draft.imageUrl];
+  return <div className="screen flow-screen">{error && <div className="data-note data-error" role="alert">{error}</div>}<p className="screen-intro">Make sure the meal is visible across your selected photos before continuing.</p><div className={`preview-image-wrap ${images.length > 1 ? "preview-image-grid" : ""}`}>{images.map((image, index) => <img key={`${image}-${index}`} src={image} alt={`Meal preview ${index + 1}`}/>) }<span className="preview-chip">{images.length > 1 ? `${images.length} photos` : "Photo preview"}</span></div><h2 className="flow-meal-name">{draft.mealName}</h2><p className="muted flow-help">Neulifi will combine these images to prepare a simple assessment and practical next steps.</p><div className="flow-actions"><button type="button" className="button button-soft" onClick={onRetake}>Retake</button><button type="button" className="button button-dark" onClick={onAnalyse}>Analyse meal {icon("arrow", 16)}</button></div></div>;
+}
 export function Analysing() { return <div className="screen analysing-screen" role="status" aria-live="polite"><div className="analysis-orbit"><span/><span/><span/></div><h1>Analysing your meal</h1><p>Neulifi is looking at your meal and preparing clear observations and one practical next step.</p><div className="analysis-progress"><span/></div><small>This usually takes a few seconds</small></div>; }
 
 export function MealResults({ meal, actions, onAction, onAddTask, onDone }: { meal: Meal; actions: ResultAction[]; onAction: (id: string) => void; onAddTask: () => void; onDone: () => void }) {
