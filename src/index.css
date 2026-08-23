@@ -1098,3 +1098,11 @@ svg.auth-icon-logo { color: var(--brand-strong); }
   .affiliate-card { align-items: flex-start; flex-direction: column; gap: 13px; }
   .affiliate-card .button { width: auto; }
 }
+
+
+/* Simple actions heading hierarchy. */
+.task-board-screen .screen-heading-row h1 { margin-bottom: 9px; }
+.task-board-screen .screen-heading-row .screen-subtitle { margin-top: 0; }
+@media (max-width: 680px) {
+  .task-board-screen .screen-heading-row h1 { margin-bottom: 8px; }
+}
