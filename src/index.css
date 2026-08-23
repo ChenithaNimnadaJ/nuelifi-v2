@@ -41,7 +41,7 @@ button:disabled { cursor: not-allowed; }
 img { max-width: 100%; }
 
 #root { min-height: 100dvh; }
-.app-shell { background: var(--surface-raised); min-height: 100dvh; margin: 0 auto; max-width: 1440px; position: relative; transition: background-color .2s ease, box-shadow .2s ease; }
+.app-shell { background: var(--surface-raised); min-height: 100dvh; margin: 0 auto; max-width: 1440px; position: relative; transition: background-color .2s ease, box-shadow .2s ease; width: 100%; }
 main { min-width: 0; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .topbar { align-items: center; background: color-mix(in srgb, var(--surface-raised) 90%, transparent); border-bottom: 1px solid var(--border-soft); display: flex; height: clamp(62px, 7vw, 76px); justify-content: space-between; padding: 0 clamp(16px, 4vw, 42px); position: sticky; top: 0; z-index: 4; backdrop-filter: blur(18px); }
 .brand { align-items: center; display: flex; font-family: Geist, Inter, sans-serif; font-size: clamp(18px, 2vw, 21px); gap: 8px; letter-spacing: -.045em; }
@@ -179,7 +179,7 @@ h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 
 @media (min-width: 960px) {
   body { background: var(--bg); }
-  .app-shell { border: 1px solid var(--border); display: grid; grid-template-columns: clamp(220px, 19vw, 260px) minmax(0, 1fr); grid-template-rows: clamp(68px, 6vw, 76px) minmax(0, 1fr); overflow: hidden; }
+  .app-shell { border: 1px solid var(--border); display: grid; grid-template-columns: clamp(220px, 19vw, 260px) minmax(0, 1fr); grid-template-rows: clamp(68px, 6vw, 76px) minmax(0, 1fr); max-width: none; overflow: hidden; }
   main { grid-column: 2; grid-row: 2; min-height: calc(100dvh - clamp(68px, 6vw, 76px)); overflow: auto; padding-bottom: 0; }
   .topbar { grid-column: 2; grid-row: 1; padding-left: clamp(28px, 4vw, 42px); padding-right: clamp(28px, 4vw, 42px); }
   .topbar .brand { display: none; } .topbar-title { text-align: left; } .topbar-title:empty::before { color: var(--text-strong); content: "Overview"; }
