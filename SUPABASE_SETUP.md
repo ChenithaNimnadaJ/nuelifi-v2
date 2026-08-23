@@ -34,10 +34,8 @@ Then replace the placeholders in `.env.local`.
 | `SUPABASE_URL` | Server-side Supabase client | Server configuration | Your Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | Optional server-side Supabase client | Server configuration | Your Supabase publishable/anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Privileged server operations | **Private** | Replace only in the backend secret store |
-| `GROQ_API_KEY` | Server-side meal analysis | **Private** | Replace only in the backend secret store |
-| `GROQ_MODEL` | Server-side meal analysis | Configuration | `qwen/qwen3.6-27b` |
-| `GEMINI_API_KEY` | Free-tier Gemini key 1 | **Private** | Replace only in the backend secret store |
-| `GEMINI_API_KEY_2` | Free-tier Gemini key 2 / redundancy | **Private** | Replace only in the backend secret store |
+| `GEMINI_API_KEY` | Free-tier Gemini key 1 for server-side meal analysis | **Private** | Replace only in the backend secret store |
+| `GEMINI_API_KEY_2` | Free-tier Gemini key 2 for server-side redundancy | **Private** | Replace only in the backend secret store |
 
 The browser client supports both `VITE_*` and `NEXT_PUBLIC_*` Supabase public names. The Vite build maps the Next-style aliases when a deployment platform provides those names. The browser client intentionally has no hardcoded project URL or key fallback; provide the public values through the build environment.
 
@@ -67,15 +65,13 @@ For the backend service, add the server-only variables to the platform’s **run
 SUPABASE_URL
 SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY
-GROQ_API_KEY
-GROQ_MODEL=qwen/qwen3.6-27b
 GEMINI_API_KEY
 GEMINI_API_KEY_2
-GEMINI_MODEL=gemini-3.5-flash-lite
-GEMINI_FALLBACK_MODELS=gemini-3.1-flash-lite,gemini-2.5-flash-lite,gemini-3.7-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-2.5-flash
+GEMINI_MODEL=gemini-3.7-flash
+GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-2.5-flash,gemini-3.5-flash-lite
 ```
 
-The frontend and backend must use the same Supabase project. The frontend should never receive `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, or `GEMINI_API_KEY_2`. Both Gemini credentials are Free Tier credentials; this implementation does not configure or use a paid Gemini API.
+The frontend and backend must use the same Supabase project. The frontend should never receive `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, or `GEMINI_API_KEY_2`. The two Gemini credentials are server-only Free Tier credentials; the Worker tries the configured model order with the first key and then retries with the second key when the first provider path is unavailable.
 
 ## 4. Start locally
 

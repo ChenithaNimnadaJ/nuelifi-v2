@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { createStore } from "./store.mjs";
 import { analyzeMealWithGemini } from "./gemini.mjs";
-import { analyzeMealWithGroq } from "./groq.mjs";
 
 const port = Number(process.env.PORT || 8787);
 const dataFile = resolve(process.env.NEULIFI_DATA_FILE || process.env.NUELIFI_DATA_FILE || "./data/neulifi.json");
@@ -33,8 +32,7 @@ async function scopedUser(req, id) {
 
 async function analyzeMeal(imageUrl, mealName, context = {}) {
   const providers = [];
-  if (process.env.GROQ_API_KEY) providers.push(["groq", () => analyzeMealWithGroq({ imageUrl, mealName, context })]);
-  if (process.env.GEMINI_API_KEY) providers.push(["gemini", () => analyzeMealWithGemini({ imageUrl, mealName, context })]);
+  if (process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2) providers.push(["gemini", () => analyzeMealWithGemini({ imageUrl, mealName, context })]);
   let lastError;
   for (const [name, run] of providers) {
     try { const analysis = await run(); if (analysis) return { analysis, provider: name }; } catch (error) { lastError = error; console.warn(`${name} meal analysis unavailable: ${error.message}`); }
@@ -139,7 +137,7 @@ async function route(req, res) {
       if (req.method === "POST" && parts[3] === "meals") {
         const input = await body(req); required(input.imageUrl, "imageUrl");
         let analysis = mealAssessment(input.analysis);
-        if (!input.analysis && (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY)) {
+        if (!input.analysis && (process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2)) {
           try { analysis = (await analyzeMeal(input.imageUrl, input.mealName || "Meal", input.context || {})).analysis || analysis; }
           catch (error) { console.warn(`AI unavailable; using local assessment: ${error.message}`); }
         }
