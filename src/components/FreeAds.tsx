@@ -46,15 +46,22 @@ export function FreeAds() {
     const responsiveSlot = document.getElementById("neulifi-ad-responsive");
     if (!nativeSlot || !rectangleSlot || !responsiveSlot) return;
     let active = true;
+    let responsiveLoadId = 0;
     const media = window.matchMedia("(min-width: 760px)");
-    const updateResponsiveKey = () => setResponsiveKey(media.matches ? wideOptions.key : compactOptions.key);
+    const loadResponsive = async () => {
+      const loadId = ++responsiveLoadId;
+      responsiveSlot.replaceChildren();
+      await loadResponsiveBanner(responsiveSlot);
+      if (!active || loadId !== responsiveLoadId) responsiveSlot.replaceChildren();
+    };
+    const updateResponsiveKey = () => { setResponsiveKey(media.matches ? wideOptions.key : compactOptions.key); void loadResponsive(); };
     media.addEventListener?.("change", updateResponsiveKey);
     const load = async () => {
       await appendScript(nativeSlot, nativeScriptUrl);
       if (!active) return;
       await appendScript(rectangleSlot, "https://www.highrevenueformat.com/1c09d4ea208a7363f4640e680e72f2da/invoke.js", rectangleOptions);
       if (!active) return;
-      await loadResponsiveBanner(responsiveSlot);
+      await loadResponsive();
     };
     void load();
     return () => {

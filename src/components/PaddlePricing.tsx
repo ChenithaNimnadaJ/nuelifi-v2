@@ -14,13 +14,19 @@ function runtimeConfigUrl() {
   return `${apiBase}/api/paddle/config`;
 }
 
-async function loadPrices(config: PaddleRuntimeConfig): Promise<PriceState> {
+async function loadPrices(config: PaddleRuntimeConfig): Promise<{ prices: PriceState; failures: number }> {
   const paddle = await getPaddle();
-  const entries = await Promise.all(paddleTiers.flatMap((tier) => (Object.entries(tier.priceId) as [PaddleBillingInterval, string][]).filter(([, priceId]) => priceId).map(async ([interval, priceId]) => {
+  const results = await Promise.allSettled(paddleTiers.flatMap((tier) => (Object.entries(tier.priceId) as [PaddleBillingInterval, string][]).filter(([, priceId]) => priceId).map(async ([interval, priceId]) => {
     const preview = await paddle.PricePreview({ items: [{ priceId, quantity: 1 }], ...(config.countryCode ? { address: { countryCode: config.countryCode } } : {}) });
     return [`${tier.planId}-${interval}`, readFormattedTotal(preview)] as const;
   })));
-  return Object.fromEntries(entries);
+  const prices: PriceState = {};
+  let failures = 0;
+  for (const result of results) {
+    if (result.status === "fulfilled") prices[result.value[0]] = result.value[1];
+    else failures += 1;
+  }
+  return { prices, failures };
 }
 
 export function PaddlePricing({ onAuth }: PaddlePricingProps) {
@@ -41,8 +47,12 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || "Paddle pricing is not configured yet.");
         const config: PaddleRuntimeConfig = typeof payload.countryCode === "string" && /^[A-Z]{2}$/.test(payload.countryCode) ? { countryCode: payload.countryCode } : {};
-        const nextPrices = await loadPrices(config);
-        if (active) { setCountryCode(config.countryCode); setPrices(nextPrices); }
+        const { prices: nextPrices, failures } = await loadPrices(config);
+        if (active) {
+          setCountryCode(config.countryCode);
+          setPrices(nextPrices);
+          if (failures) setError(failures === paddleTiers.filter((tier) => tier.planId !== "free" && tier.priceId.year).length ? "Annual prices could not be loaded. Please refresh and try again." : "Some annual prices could not be loaded. Those plans will remain unavailable until pricing is confirmed.");
+        }
       } catch (value) {
         if (active) setError(value instanceof Error ? value.message : "Paddle pricing could not be loaded.");
       } finally {
@@ -53,7 +63,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
     return () => { active = false; };
   }, []);
 
-  const priceLabel = (tier: Tier) => tier.planId === "free" ? "Free" : prices[`${tier.planId}-${interval}`] || "—";
+  const priceLabel = (tier: Tier) => tier.planId === "free" ? "Free" : prices[`${tier.planId}-${interval}`] || "Unavailable";
   const checkout = async (tier: Tier) => {
     if (tier.planId === "free") { onAuth("signup"); return; }
     if (!tier.priceId.year) { setError(`${tier.name} is not configured for annual billing yet.`); return; }
@@ -102,6 +112,6 @@ function PaddlePlanCard({ tier, interval, price, loading, checkoutPlan, onSubscr
     <div className="plan-price">{loading && tier.planId !== "free" ? <span className="paddle-price-loading" aria-label="Loading price">…</span> : price}<small>{tier.planId === "free" ? "" : " / year"}</small></div>
     {tier.planId !== "free" && <div className="plan-monthly-anchor">No free trial · billed annually from the first cycle</div>}
     <div className="plan-features plan-features-premium">{tier.features.map((feature, index) => <span className={index === 0 ? "plan-feature-emphasis" : ""} key={feature}>✓ {feature}</span>)}</div>
-    <button className={`button ${highlighted ? "button-green" : "button-soft"}`} type="button" onClick={onSubscribe} disabled={loading && tier.planId !== "free" || checkoutPlan === tier.planId}>{checkoutPlan === tier.planId ? "Opening…" : tier.planId === "free" ? "Start free" : "Subscribe"}</button>
+    <button className={`button ${highlighted ? "button-green" : "button-soft"}`} type="button" onClick={onSubscribe} disabled={loading && tier.planId !== "free" || tier.planId !== "free" && price === "Unavailable" || checkoutPlan === tier.planId}>{checkoutPlan === tier.planId ? "Opening…" : tier.planId === "free" ? "Start free" : price === "Unavailable" ? "Price unavailable" : "Subscribe"}</button>
   </article>;
 }

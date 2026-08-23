@@ -41,7 +41,7 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
     setBusy(true);
     setMessage("");
     try {
-      const result = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+      const result = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo, queryParams: { prompt: "select_account" } } });
       if (result.error) { setBusy(false); setMessage(/cancel|denied/i.test(result.error.message) ? "Google sign-in was cancelled. You can try again whenever you’re ready." : "Google sign-in could not be started. Please try again."); }
     } catch (value) { setBusy(false); setMessage(value instanceof Error ? value.message : "Google sign-in could not be started. Please try again."); }
   };
