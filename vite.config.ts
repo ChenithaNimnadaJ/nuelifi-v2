@@ -12,7 +12,11 @@ export default defineConfig(({ mode }) => {
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const supabasePublishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
-  const apiProxyTarget = process.env.VITE_API_URL || 'http://localhost:8787'
+  const apiProxyTarget = process.env.VITE_API_URL || (mode === 'production' ? 'https://neulifi.online' : 'http://localhost:8787')
+
+  if (mode === 'production' && (!supabaseUrl || !supabasePublishableKey)) {
+    throw new Error('Production build requires VITE_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.')
+  }
 
   return {
     base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
