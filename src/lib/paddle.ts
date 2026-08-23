@@ -67,6 +67,8 @@ function requiredClientToken(environment: Environments): string {
 
 let paddlePromise: Promise<Paddle> | null = null;
 
+function publicOrigin() { return import.meta.env.MODE === "production" ? "https://neulifi.online" : window.location.origin; }
+
 export async function getPaddle(): Promise<Paddle> {
   const environment = requiredEnvironment();
   const token = requiredClientToken(environment);
@@ -75,7 +77,7 @@ export async function getPaddle(): Promise<Paddle> {
       environment,
       token,
       eventCallback: (event) => {
-        if (event.name === "checkout.completed") window.location.assign("/welcome");
+        if (event.name === "checkout.completed") window.location.assign(`${publicOrigin()}/welcome`);
       },
     }).then((instance) => {
       if (!instance) throw new Error("Paddle could not initialize. Check the client-side token and approved domain.");

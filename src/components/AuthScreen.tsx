@@ -13,7 +13,9 @@ export function AuthScreen({ onPreview, onAuthenticated, themeMode, onThemeChang
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const returnPath = window.localStorage.getItem("neulifi-auth-return-path") === "/welcome" ? "/welcome" : "/app";
-  const redirectTo = new URL(returnPath, window.location.origin).toString();
+  const configuredAuthOrigin = String(import.meta.env.VITE_AUTH_REDIRECT_URL || "").trim().replace(/\/+$/, "");
+  const authOrigin = configuredAuthOrigin || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? window.location.origin : "https://neulifi.online");
+  const redirectTo = new URL(returnPath, authOrigin).toString();
   const returningFromCheckout = returnPath === "/welcome";
   const chooseTheme = async (nextMode: ThemeMode) => { try { await onThemeChange(nextMode); } catch (value) { setMessage(value instanceof Error ? value.message : "Could not save your appearance preference."); } };
 

@@ -5,10 +5,13 @@ import { getPaddle, paddleTiers, readFormattedTotal, type PaddleBillingInterval,
 type PaddlePricingProps = { onAuth: (mode: "signin" | "signup", returnPath?: "/app" | "/welcome") => void };
 type PriceState = Record<string, string>;
 
+function publicOrigin() { return import.meta.env.MODE === "production" ? "https://neulifi.online" : window.location.origin; }
+
 function runtimeConfigUrl() {
   const configured = String(import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
   const safeBase = import.meta.env.MODE === "production" && /^(https?:)?\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configured) ? "" : configured;
-  return `${safeBase}/api/paddle/config`;
+  const apiBase = safeBase || (import.meta.env.MODE === "production" ? "https://neulifi.online" : "");
+  return `${apiBase}/api/paddle/config`;
 }
 
 async function loadPrices(config: PaddleRuntimeConfig): Promise<PriceState> {
@@ -64,7 +67,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
         items: [{ priceId: tier.priceId.year, quantity: 1 }],
         customer: session?.user?.email ? { email: session.user.email } : undefined,
         customData: { plan: tier.planId, billing_interval: "year", source: "neulifi", ...(session?.user?.id ? { user_id: session.user.id } : {}) },
-        settings: { displayMode: "overlay", variant: "one-page", successUrl: `${window.location.origin}/welcome` },
+        settings: { displayMode: "overlay", variant: "one-page", successUrl: `${publicOrigin()}/welcome` },
       });
     } catch (value) {
       window.localStorage.removeItem("neulifi-checkout-intent");
@@ -81,7 +84,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       <h1>More room for the rhythm you are building.</h1>
       <p>Choose the level that fits today. Paid plans are billed from the first cycle—there are no free trials—and you can manage your plan from your account.</p>
       <div className="paddle-billing-controls paddle-billing-controls-annual" aria-label="Billing period"><span className="paddle-annual-badge">Annual billing</span><strong>One clear yearly price</strong><small>No monthly option is offered at this time.</small></div>
-      <small className="paddle-location-note">{countryLabel}. Final totals, taxes, and currency are returned by Paddle.</small>
+      <small className="paddle-location-note">{countryLabel}. Final totals, taxes, and currency are shown at checkout.</small>
     </section>
     {error && <div className="data-note data-error paddle-status" role="alert">{error}</div>}
     <section className="plan-grid plan-grid-premium paddle-plan-grid" aria-label="Neulifi plans">
