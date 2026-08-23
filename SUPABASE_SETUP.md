@@ -92,7 +92,7 @@ On a fresh configured preview with no existing Supabase session, the application
 
 ## 5. Configure authentication
 
-In Supabase, open **Authentication → Providers** and enable the sign-in methods needed by Nuelifi. Email/password is the simplest first option. The application uses `supabase.auth.signUp`, `supabase.auth.signInWithPassword`, `supabase.auth.signInWithOAuth`, `supabase.auth.signOut`, and `supabase.auth.onAuthStateChange`.
+In Supabase, open **Authentication → Providers** and enable the sign-in methods needed by Nuelifi. Email/password is the simplest first option. The application uses `supabase.auth.signUp`, `supabase.auth.signInWithPassword`, `supabase.auth.signInWithOtp` for passwordless email links, `supabase.auth.verifyOtp` or `supabase.auth.exchangeCodeForSession` on `/auth/confirm`, `supabase.auth.signOut`, and `supabase.auth.onAuthStateChange`.
 
 ### Google sign-in
 
@@ -119,12 +119,12 @@ Supabase uses **Authentication → URL Configuration** to decide the default des
 | Setting | Production value |
 | --- | --- |
 | **Site URL** | `https://neulifi.online` |
-| **Redirect URLs** | `https://neulifi.online/app` and `https://neulifi.online/welcome` |
+| Redirect URL | `https://neulifi.online/app`, `https://neulifi.online/welcome`, and `https://neulifi.online/auth/confirm` |
 | **Local development** | Add only the exact local callback paths you actually use, such as `http://localhost:5173/app` and `http://localhost:5173/welcome`. |
 
 Avoid broad wildcards in production. If a temporary preview deployment must support OAuth, add its exact HTTPS callback paths separately and remove them when no longer needed. The frontend sends email confirmation and password-reset redirects based on the same configured auth origin; set `VITE_AUTH_REDIRECT_URL=https://neulifi.online` for an explicit production build, or omit it only when the canonical production fallback is acceptable. After changing these settings, create a new signup request because older verification emails retain their original redirect target.
 
-The exact Supabase provider callback is different from the Nuelifi post-login redirect. The callback is the Google-to-Supabase handoff URI shown on **Authentication → Providers → Google**; `/app` and `/welcome` are the final application destinations after Supabase establishes the session.
+The exact Supabase provider callback is different from the Nuelifi post-login redirect. The callback is the Google-to-Supabase handoff URI shown on **Authentication → Providers → Google**; `/auth/confirm` is the passwordless email-link confirmation screen; `/app` and `/welcome` are the final application destinations after Supabase establishes the session. The application sends magic-link emails to `/auth/confirm`, so that exact URL must be present in the Redirect URLs allowlist.
 
 ## 6. Security notes
 
