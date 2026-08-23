@@ -17,7 +17,7 @@ Configure these Worker secrets without committing them to GitHub:
 The existing `SUPABASE_URL` and `FRONTEND_ORIGIN` Worker configuration must remain present. The public checkout entry point is `POST /api/checkout`, and the Stripe event destination is:
 
 ```text
-https://neulifi.chenithanimnadaj.workers.dev/api/stripe/webhook
+https://neulifi.online/api/stripe/webhook
 ```
 
 ## Stripe configuration

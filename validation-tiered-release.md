@@ -1,6 +1,6 @@
 # Tiered release validation notes
 
-Validated on 2026-08-22 in production at https://nuelifi.chenithanimnadaj.workers.dev/.
+Validated on 2026-08-22 in production at https://neulifi.online/.
 
 - Pricing route serves the current bundle and shows Free, Pro, and Premium benefits plus $10/year and $30/year annual prices.
 - Public pricing cards no longer show the internal daily AI allowance numbers.
@@ -15,4 +15,4 @@ The first production deployment after the code change used a stale Cloudflare ma
 
 The corrected live build also serves the tiered Insights screen in preview mode: Free shows the basic score/history view, while Pro and Premium show distinct locked-value cards with separate upgrade actions. The Premium action is visible as the preferred value path.
 
-The live Premium analytics modal was opened successfully. It presents Pro at $10/year and Premium at $30/year, marks Premium as BEST VALUE, explains main-meal and snack coverage, and includes verified-payment language. Clicking Choose Premium in preview mode correctly shows `Sign in to Nuelifi before choosing a paid plan` rather than pretending to start checkout.
+The live Premium analytics modal was opened successfully. It presents Pro at $10/year and Premium at $30/year, marks Premium as BEST VALUE, explains main-meal and snack coverage, and includes verified-payment language. Clicking Choose Premium in preview mode correctly shows `Sign in to Neulifi before choosing a paid plan` rather than pretending to start checkout.

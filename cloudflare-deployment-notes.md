@@ -1,34 +1,19 @@
 # Cloudflare deployment notes
 
-Cloudflare official direct upload documentation: https://developers.cloudflare.com/pages/get-started/direct-upload/ (retrieved 2026-08-21). It states that Pages Direct Upload accepts a prebuilt assets folder, can include a `_worker.js` file, and Pages Functions are supported with Wrangler; `_worker.js` is supported for direct deployments. Cloudflare official Pages Create Deployment API: https://developers.cloudflare.com/api/resources/pages/subresources/projects/subresources/deployments/methods/create/ (retrieved 2026-08-21). The API accepts multipart form data with a manifest and `_worker.js` and returns deployment status and URL.
+Cloudflare’s official documentation for [Workers static assets direct upload](https://developers.cloudflare.com/workers/static-assets/direct-upload/) describes manifest registration, asset upload, and script deployment using an assets binding. The Neulifi release uses that Worker module and assets workflow rather than treating an unrelated Pages project as the public application.
 
-Cloudflare Workers static assets direct upload documentation: https://developers.cloudflare.com/workers/static-assets/direct-upload/ (retrieved 2026-08-21). It describes manifest registration, asset upload, and script deployment using an assets binding.
+## Current production attachment
 
-Cloudflare account: account ID is handled by the connector. Existing Pages projects were `bolt` and `studyly`; none matched Nuelifi. A new Pages project was created: `nuelifi`, project ID `b4857da5-8e14-4229-8fc7-5a48a953a919`, production branch `main`, domain `https://nuelifi.pages.dev`.
+The production service is the `neulifi` Worker with the custom domain `https://neulifi.online`. The custom-domain attachment is registered in the production environment, and the Worker serves the Neulifi frontend, `/health`, authenticated API routes, Paddle endpoints, and CORS preflight handling. Private Worker secrets remain configured outside the repository.
 
-Successful production deployment: deployment ID `e0ddfd05-d8ad-41f0-bc8b-c177f40a690d`, short ID `e0ddfd05`, URL `https://e0ddfd05.nuelifi.pages.dev`, created 2026-08-21T14:31:54Z, status accepted and queued. It contains the frontend assets and `_worker.js`.
+The older Pages experiments and default Cloudflare Worker subdomains are not public product URLs. They are not used in frontend configuration, Supabase Auth URL configuration, Paddle checkout URLs, OAuth returns, customer emails, or referral links.
 
-Production env vars configured on the Pages project include VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_AUTH_REDIRECT_URL, FRONTEND_ORIGIN, REQUIRE_AUTH=true, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, GROQ_API_KEY secret, GROQ_MODEL=qwen/qwen3.6-27b, GEMINI_API_KEY secret, GEMINI_MODEL=gemini-3.7-flash, and GEMINI_FALLBACK_MODELS=gemini-3.5-flash,gemini-2.5-flash. Secret values are not recorded here.
+## Current release behavior
 
-## Final deployment outcome
+The frontend is built with an empty production `VITE_API_URL` so same-origin API requests use `https://neulifi.online`, together with `VITE_AUTH_REDIRECT_URL=https://neulifi.online`. The live JavaScript and CSS assets are `index-BsZM_3vL.js` and `index-BCKQrhJ1.css`.
 
-The working production deployment is the standalone Cloudflare Worker at `https://nuelifi.chenithanimnadaj.workers.dev/`. Worker deployment `1e4e3529efc44f32b3bbbc68d31cb903` was accepted at 2026-08-21T15:10:32Z with `has_assets: true`; the Worker subdomain was enabled at the account’s existing `chenithanimnadaj.workers.dev` subdomain.
+The Worker contains a defense-in-depth check for the exact obsolete default hostname. Safe browser requests from that hostname are forwarded to the official origin with supported authentication callback parameters preserved; legitimate future subdomains of `neulifi.online` are not caught by this guard. Cloudflare’s dedicated default-subdomain setting is disabled for both the primary and legacy script names, and preview subdomains are disabled as well.
 
-The Worker serves the Nuelifi frontend and `/health`, `/api/analyze`, and CORS preflight routes. Server-side Worker secrets were configured for Supabase authentication, Groq, Gemini, and `REQUIRE_AUTH=true`. The unauthenticated analysis check returns HTTP 401, and CORS preflight returns HTTP 204.
+## Verification status
 
-The Cloudflare Pages project deployments remain HTTP 500 even after static-only direct-upload attempts. The Worker deployment is therefore the canonical live URL for this release; the Pages project was left intact for later cleanup or repair.
-
-The production frontend build was generated with `VITE_API_URL=https://nuelifi.chenithanimnadaj.workers.dev` and `VITE_AUTH_REDIRECT_URL=https://nuelifi.chenithanimnadaj.workers.dev`. The bundle was verified to contain the live Worker API URL. Browser verification confirmed the authentication screen, preview dashboard, Analyse, Actions, Insights, and Profile screens render on the Worker URL.
-
-
-## Responsive UI release
-
-The fluid responsive, semantic dark-mode, pre-auth theme selector, and protected preview handoff release was deployed successfully as Worker deployment `c1d4304469714db68f676c914e3bdff0` on 2026-08-21T16:20:11Z. The live asset bundle is `index-B5lYCr3I.js` and `index-DxTLXHiC.css`; the live Worker URL remains `https://nuelifi.chenithanimnadaj.workers.dev/`.
-
-## Blank-dashboard and AI route fix — 2026-08-21
-
-The production diagnosis found that the stale frontend bundle was calling `http://localhost:8787/api/analyze`, causing authenticated meal analysis to wait until the 60-second client timeout. The frontend was rebuilt with `VITE_API_URL=https://nuelifi.chenithanimnadaj.workers.dev` and redeployed together with the Worker’s bounded AI-provider timeout and corrected Gemini fallback handling.
-
-Final full Worker + asset deployment: `db045db0ffbc469c85284e9085e4d187`.
-
-The canonical live URL remains `https://nuelifi.chenithanimnadaj.workers.dev/`.
+The official root, `/app`, `/login`, `/plans`, `/checkout`, and `/api/paddle/config` routes have been smoke-tested on `https://neulifi.online`. The Google OAuth initiation encoded `https://neulifi.online/app` as its return target. The live Premium annual checkout overlay displayed `$30.00/year` and was closed without entering payment information or submitting a transaction.
