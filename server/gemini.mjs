@@ -1,15 +1,15 @@
 import { analysisSchema, buildMealPrompt, normalizeMealAnalysis } from "./normalize.mjs";
 
-const supportedModels = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"];
-const defaultModels = (process.env.GEMINI_FALLBACK_MODELS || supportedModels.join(",")).split(",").map((value) => value.trim()).filter(Boolean);
+const supportedModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"];
+const defaultModels = supportedModels;
 
 function modelsFor(keyName) {
   const configured = keyName === "GEMINI_API_KEY_2"
     ? process.env.GEMINI_KEY_2_MODELS || process.env.GEMINI_FALLBACK_MODELS || process.env.GEMINI_MODEL
     : process.env.GEMINI_KEY_1_MODELS || process.env.GEMINI_MODEL || process.env.GEMINI_FALLBACK_MODELS;
   const requested = String(configured || "").split(",").map((value) => value.trim()).filter(Boolean);
-  const models = [...new Set(requested.length ? requested : defaultModels)].filter((model) => supportedModels.includes(model));
-  return models.length ? models : supportedModels;
+    const models = [...new Set([...defaultModels, ...requested])].filter((model) => supportedModels.includes(model));
+    return models.length ? models : defaultModels;
 }
 
 async function imagePart(imageUrl) {

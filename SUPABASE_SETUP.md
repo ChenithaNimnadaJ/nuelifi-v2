@@ -67,8 +67,8 @@ SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY
 GEMINI_API_KEY
 GEMINI_API_KEY_2
-GEMINI_MODEL=gemini-3.7-flash
-GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-2.5-flash,gemini-3.5-flash-lite
+GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_FALLBACK_MODELS=gemini-2.5-flash,gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.6-flash,gemini-3.7-flash
 ```
 
 The frontend and backend must use the same Supabase project. The frontend should never receive `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, or `GEMINI_API_KEY_2`. The two Gemini credentials are server-only Free Tier credentials; the Worker tries the configured model order with the first key and then retries with the second key when the first provider path is unavailable.
