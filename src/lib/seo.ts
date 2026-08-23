@@ -83,12 +83,16 @@ export function applySeoMetadata(page: PublicPage | null, authMode: "signin" | "
       : { title: "Neulifi Dashboard — Your private health space", description: "Your private Neulifi space for meal insights, actions, and food and lifestyle patterns.", canonical: `${ORIGIN}/app` });
   document.title = definition.title;
   setMeta('meta[name="description"]', "name", "description", definition.description);
+  setMeta('meta[property="og:site_name"]', "property", "og:site_name", "Neulifi");
   setMeta('meta[property="og:title"]', "property", "og:title", definition.title);
   setMeta('meta[property="og:description"]', "property", "og:description", definition.description);
   setMeta('meta[property="og:url"]', "property", "og:url", definition.canonical);
   setMeta('meta[property="og:type"]', "property", "og:type", "website");
   setMeta('meta[property="og:image"]', "property", "og:image", `${ORIGIN}/neulifi-dashboard-preview-light.webp`);
   setMeta('meta[name="twitter:card"]', "name", "twitter:card", "summary_large_image");
+  setMeta('meta[name="twitter:title"]', "name", "twitter:title", definition.title);
+  setMeta('meta[name="twitter:description"]', "name", "twitter:description", definition.description);
+  setMeta('meta[name="twitter:image"]', "name", "twitter:image", `${ORIGIN}/neulifi-dashboard-preview-light.webp`);
   setMeta('meta[name="robots"]', "name", "robots", publicDefinition && !privateRoute ? "index, follow" : "noindex, nofollow");
   setCanonical(definition.canonical);
   setWebSiteSchema(publicDefinition);

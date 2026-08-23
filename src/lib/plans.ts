@@ -6,7 +6,7 @@ export type PlanConfig = (typeof rawPlanConfig)["plans"][PlanId];
 
 export const planConfig = rawPlanConfig as {
   version: number;
-  usagePeriod: "calendar_month";
+  usagePeriod: "calendar_day";
   currency: string;
   plans: Record<PlanId, PlanConfig>;
 };

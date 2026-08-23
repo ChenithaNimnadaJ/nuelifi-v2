@@ -1,0 +1,19 @@
+{
+  "name": "Neulifi — Meal & Lifestyle Companion",
+  "short_name": "Neulifi",
+  "description": "Understand your meals, choose practical next steps, and notice your patterns over time.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7f5",
+  "theme_color": "#147947",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/neulifi-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
