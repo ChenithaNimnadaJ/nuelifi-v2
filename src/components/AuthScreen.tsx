@@ -40,9 +40,12 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
   const returnPath = window.localStorage.getItem("neulifi-auth-return-path") === "/welcome" ? "/welcome" : "/app";
   const configuredAuthOrigin = String(import.meta.env.VITE_AUTH_REDIRECT_URL || "").trim().replace(/\/+$/, "");
   const normalizedAuthOrigin = configuredAuthOrigin === "https://nuelifi.chenithanimnadaj.workers.dev" ? "https://neulifi.online" : configuredAuthOrigin;
-  const authOrigin = normalizedAuthOrigin || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? window.location.origin : "https://neulifi.online");
+  const isLocalAuthOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedAuthOrigin);
+  const isCanonicalAuthOrigin = normalizedAuthOrigin === "https://neulifi.online";
+  const currentOrigin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? window.location.origin : "https://neulifi.online";
+  const authOrigin = isCanonicalAuthOrigin || (import.meta.env.MODE !== "production" && isLocalAuthOrigin) ? normalizedAuthOrigin : currentOrigin;
   const magicLinkRedirectTo = new URL("/auth/confirm", authOrigin).toString();
-  const recoveryRedirectTo = new URL("/login?reset=1", authOrigin).toString();
+  const recoveryRedirectTo = new URL("/auth/confirm?reset=1", authOrigin).toString();
   const returningFromCheckout = returnPath === "/welcome";
 
   const chooseTheme = async (nextMode: ThemeMode) => { try { await onThemeChange(nextMode); } catch (value) { setMessage(value instanceof Error ? value.message : "Could not save your appearance preference."); } };

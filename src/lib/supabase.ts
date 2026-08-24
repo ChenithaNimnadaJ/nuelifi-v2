@@ -6,7 +6,7 @@ const url = String(env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || "").
 const publishableKey = String(env.VITE_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "").trim();
 
 export const supabase = url && publishableKey ? createClient(url, publishableKey, {
-  auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true, flowType: "pkce" },
+  auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false, flowType: "pkce" },
 }) : null;
 
 function tokenTimes(accessToken: string) {

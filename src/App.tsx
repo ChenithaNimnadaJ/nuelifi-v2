@@ -27,6 +27,7 @@ const LazyReferralDashboard = lazy(() => import("./components/ProductScreens").t
 const LazyAdminPayoutDashboard = lazy(() => import("./components/AdminPayoutDashboard").then(({ AdminPayoutDashboard }) => ({ default: AdminPayoutDashboard })));
 const AUTH_RETURN_PATH_KEY = "neulifi-auth-return-path";
 function safeAuthReturnPath() { const stored = window.localStorage.getItem(AUTH_RETURN_PATH_KEY) || "/app"; window.localStorage.removeItem(AUTH_RETURN_PATH_KEY); return stored === "/welcome" ? "/welcome" : "/app"; }
+function withAppTimeout<T>(promise: Promise<T>, milliseconds: number, code: string): Promise<T> { return new Promise((resolve, reject) => { const timer = window.setTimeout(() => reject(new Error(code)), milliseconds); promise.then((value) => { window.clearTimeout(timer); resolve(value); }, (error) => { window.clearTimeout(timer); reject(error); }); }); }
 type DataState = "loading" | "ready" | "error";
 type Subscription = { plan: PlanId; status: string };
 type ThemeMode = "system" | "light" | "dark";
@@ -118,7 +119,18 @@ export default function App() {
 
   useEffect(() => { const onPopState = () => { setPublicPage(publicPageFromPath(window.location.pathname) || "landing"); setAuthMode(authModeFromPath(window.location.pathname)); }; window.addEventListener("popstate", onPopState); return () => window.removeEventListener("popstate", onPopState); }, []);
   useEffect(() => { const legacyPath = window.location.pathname === "/features" ? "/how-it-works" : window.location.pathname === "/pricing" || window.location.pathname === "/checkout" ? "/plans" : null; if (legacyPath) { window.history.replaceState(null, "", legacyPath); setPublicPage(publicPageFromPath(legacyPath) || "landing"); setAuthMode(null); } const privateRoute = ["/app", "/welcome", "/auth/confirm", "/admin"].includes(window.location.pathname); applySeoMetadata(publicPage, authMode, privateRoute); }, [publicPage, authMode]);
-  useEffect(() => { if (!supabase) return; let active = true; getHealthySession().then((session) => { if (!active) return; const user = session?.user; setSessionUser(user ? { id: user.id, email: user.email, name: user.user_metadata?.name, referralCode: user.user_metadata?.referral_code } : null); if (user && !isPasswordRecovery() && (authModeFromPath(window.location.pathname) || window.localStorage.getItem(AUTH_RETURN_PATH_KEY))) completeAuthRedirect(); setAuthReady(true); }).catch(() => { if (active) { setSessionUser(null); setAuthReady(true); } }); const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { const user = session?.user; setSessionUser(user ? { id: user.id, email: user.email, name: user.user_metadata?.name, referralCode: user.user_metadata?.referral_code } : null); if (user && !isPasswordRecovery() && (authModeFromPath(window.location.pathname) || window.localStorage.getItem(AUTH_RETURN_PATH_KEY))) completeAuthRedirect(); }); return () => { active = false; listener.subscription.unsubscribe(); }; }, []);
+  useEffect(() => {
+    if (!supabase) return;
+    let active = true;
+    const syncSession = (session: { user?: { id: string; email?: string; user_metadata?: { name?: string; referral_code?: string } } } | null) => {
+      const user = session?.user;
+      setSessionUser(user ? { id: user.id, email: user.email, name: user.user_metadata?.name, referralCode: user.user_metadata?.referral_code } : null);
+      if (user && !isPasswordRecovery() && (authModeFromPath(window.location.pathname) || window.localStorage.getItem(AUTH_RETURN_PATH_KEY))) completeAuthRedirect();
+    };
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (active) syncSession(session); });
+    void withAppTimeout(getHealthySession(), 15000, "auth_boot_timed_out").then((session) => { if (!active) return; syncSession(session); setAuthReady(true); }).catch(() => { if (active) { setSessionUser(null); setAuthReady(true); } });
+    return () => { active = false; listener.subscription.unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     if (!authReady) return;
@@ -138,7 +150,7 @@ export default function App() {
           window.localStorage.removeItem("neulifi-referral-code");
         }
         const fallback = { ...emptyProfile(sessionUser.email || ""), id: userId, email: sessionUser.email || "" };
-        const results = await Promise.allSettled([fetchProfile(userId, fallback), fetchMeals(userId), fetchActions(userId), fetchSubscription(userId), fetchStreak(userId), neulifiApi.usage()]);
+        const results = await withAppTimeout(Promise.allSettled([fetchProfile(userId, fallback), fetchMeals(userId), fetchActions(userId), fetchSubscription(userId), fetchStreak(userId), neulifiApi.usage()]), 30000, "private_data_timed_out");
         if (!active) return;
         const [profileResult, mealsResult, actionsResult, subscriptionResult, streakResult, usageResult] = results;
         const failures = results.filter((result) => result.status === "rejected");
@@ -164,7 +176,7 @@ export default function App() {
       } catch (error) {
         if (!active) return;
         setDataState("error");
-        setDataError(error instanceof Error ? error.message : "Could not prepare your Neulifi account.");
+        setDataError(error instanceof Error && error.message === "private_data_timed_out" ? "Your private data took too long to load. Please refresh to try again." : error instanceof Error ? error.message : "Could not prepare your Neulifi account.");
         setSubscription({ plan: "free", status: "unavailable" });
         setUsageAvailable(false);
       } finally {
@@ -197,7 +209,7 @@ export default function App() {
   const navigatePublic = (nextPage: PublicPage) => { const path = nextPage === "landing" ? "/" : `/${nextPage}`; if (import.meta.env.MODE === "production" && window.location.hostname === "nuelifi.chenithanimnadaj.workers.dev") { window.location.replace(`https://neulifi.online${path}`); return; } window.history.pushState(null, "", path); setPublicPage(nextPage); setAuthMode(null); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const navigateAuth = (mode: "signin" | "signup", returnPath: "/app" | "/welcome" = "/app") => { const referral = window.localStorage.getItem("neulifi-referral-code"); window.localStorage.setItem(AUTH_RETURN_PATH_KEY, returnPath); const path = mode === "signin" ? "/login" : "/signup"; const nextPath = referral && mode === "signup" ? `${path}?ref=${encodeURIComponent(referral)}` : path; if (import.meta.env.MODE === "production" && window.location.hostname === "nuelifi.chenithanimnadaj.workers.dev") { window.location.replace(`https://neulifi.online${nextPath}`); return; } window.history.pushState(null, "", nextPath); setAuthMode(mode); window.scrollTo({ top: 0, behavior: "smooth" }); };
   if (!authReady) return <div className="auth-loading">Loading your private Neulifi space…</div>;
-  if (window.location.pathname === "/auth/confirm") return <AuthConfirm onAuthenticated={completeAuthRedirect} themeMode={themeMode} onThemeChange={changeTheme}/>;
+  if (window.location.pathname === "/auth/confirm") return <AuthConfirm passwordRecovery={isPasswordRecovery()} onAuthenticated={completeAuthRedirect} themeMode={themeMode} onThemeChange={changeTheme}/>;
   if (window.location.pathname === "/admin") {
     if (!supabase) return <AuthScreen initialMode="signin" initialMessage="Account services are not configured for this build. Please contact Neulifi support." themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={completeAuthRedirect}/>;
     if (!sessionUser) return <AuthScreen initialMode="signin" initialMessage="Sign in with the owner account to open payout review." themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={enterAdmin}/>;

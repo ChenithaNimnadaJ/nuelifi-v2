@@ -229,8 +229,6 @@ async function encryptPayoutSecret(env, value) { const key = await payoutCryptoK
 async function decryptPayoutSecret(env, value) { const encoded = String(value || ""); if (!encoded.startsWith("v1.")) throw new Error("Payout encryption is not configured."); const packed = bytesFromBase64Url(encoded.slice(3)); if (packed.byteLength <= 12) throw new Error("Payout encryption is not configured."); const key = await payoutCryptoKey(env); return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: packed.slice(0, 12) }, key, packed.slice(12))); }
 function payoutText(value, limit) { return String(value || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, limit); }
 function validatePayoutWallet(value) { const walletAddress = String(value || "").trim(); if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(walletAddress)) throw new Error("Enter a valid USDT TRC20 wallet address."); return walletAddress; }
-function validatePayoutEmail(value) { const email = payoutText(value, 320).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error("Enter a valid PayPal email address."); return email; }
-function validatePayoutOtherDetails(value) { const details = payoutText(value, 2000); if (details.length < 4) throw new Error("Enter the payout details support should review."); return details; }
 function validatePayoutMemo(value) { const memoTag = payoutText(value, 128); if (memoTag && !/^[A-Za-z0-9 .:_/@#-]+$/.test(memoTag)) throw new Error("Memo or tag contains unsupported characters."); return memoTag; }
 function payoutAmount(value) { const amount = Number(value); if (!Number.isFinite(amount) || amount < 5 || amount > 1000000) throw new Error("Enter a payout amount of at least $5.00."); return Math.round(amount * 1_000_000) / 1_000_000; }
 function payoutRequestPathId(pathname, prefix) { const match = pathname.match(new RegExp(`^${prefix}/([^/]+)(?:/|$)`)); return uuidPath(match?.[1] ? decodeURIComponent(match[1]) : ""); }
@@ -238,7 +236,7 @@ function payoutMethodView(row) {
   if (!row || typeof row !== "object") return null;
   const methodType = row.method_type ?? row.methodType;
   const destinationLast4 = row.destination_last4 ?? row.destinationLast4 ?? row.wallet_address_last4 ?? row.walletAddressLast4 ?? null;
-  const destinationPreview = row.destination_preview ?? row.destinationPreview ?? (methodType === "crypto_transfer" && destinationLast4 ? `Wallet ending ••••${destinationLast4}` : methodType === "paypal" ? "PayPal account saved" : methodType === "other" ? "Manual review details saved" : "");
+  const destinationPreview = row.destination_preview ?? row.destinationPreview ?? (destinationLast4 ? `Wallet ending ••••${destinationLast4}` : "");
   return {
     id: row.id,
     countryCode: row.country_code ?? row.countryCode ?? "XX",
@@ -256,7 +254,7 @@ function payoutRequestView(row) {
   if (!row || typeof row !== "object") return null;
   const methodType = row.method_type ?? row.methodType;
   const destinationLast4 = row.destination_last4 ?? row.destinationLast4 ?? row.wallet_address_last4 ?? row.walletAddressLast4 ?? null;
-  const destinationPreview = row.destination_preview ?? row.destinationPreview ?? (methodType === "crypto_transfer" && destinationLast4 ? `Wallet ending ••••${destinationLast4}` : methodType === "paypal" ? "PayPal account saved" : methodType === "other" ? "Manual review details saved" : "");
+  const destinationPreview = row.destination_preview ?? row.destinationPreview ?? (destinationLast4 ? `Wallet ending ••••${destinationLast4}` : "");
   return {
     id: row.id,
     requestedAmount: Number(row.requested_amount ?? row.requestedAmount ?? 0),
@@ -282,9 +280,7 @@ function payoutOptionView(row, countryCodes = []) {
   return { methodType: row.method_type, currency: row.currency, network: row.network || "", displayName: row.display_name || "Payout method", memoRequired: Boolean(row.memo_required), countryCodes };
 }
 function payoutOptionKey(row) { return [row?.method_type || row?.methodType || "", row?.currency || "", row?.network || ""].join("|"); }
-function maskPayoutEmail(value) { const email = String(value || "").trim(); const at = email.indexOf("@"); return at > 1 ? email.slice(0, 1) + "••••" + email.slice(at) : "PayPal account saved"; }
-async function callPayoutRpc(env, rpc, body) { const response = await supabaseAdminFetch(env, `/rest/v1/rpc/${rpc}`, { method: "POST", body: JSON.stringify(body) }); if (!response.ok) { const payload = await response.json().catch(() => ({})); const upstream = String(payload?.message || payload?.hint || ""); const safe = /already pending|Add a payout method|minimum payout|available balance|Unsupported payout method|not configured for this country|wallet address|PayPal email|payout details|Memo or tag|Payout method data|Affiliate account|Payout request was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(upstream) ? upstream.slice(0, 240) : "Could not complete that payout action."; throw new Error(safe); } return response.json(); }
-async function markPayoutNotification(env, requestId, status, errorMessage = null) { await callPayoutRpc(env, "mark_affiliate_payout_notification", { p_request_id: requestId, p_status: status, p_error: errorMessage }); }
+async function callPayoutRpc(env, rpc, body) { const response = await supabaseAdminFetch(env, `/rest/v1/rpc/${rpc}`, { method: "POST", body: JSON.stringify(body) }); if (!response.ok) { const payload = await response.json().catch(() => ({})); const upstream = String(payload?.message || payload?.hint || ""); const safe = /already pending|Add a crypto payout method|minimum payout|available balance|Unsupported cryptocurrency|Unsupported payout method|not configured for this country|wallet address|Memo or tag|Payout method data|Affiliate account|Payout request was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(upstream) ? upstream.slice(0, 240) : "Could not complete that payout action."; throw new Error(safe); } return response.json(); }
 
 function uuidPath(value) { const candidate = String(value || "").trim(); return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidate) ? candidate : null; }
 function routeUserId(pathname, prefix) { const match = pathname.match(new RegExp(`^${prefix}/([^/]+)(?:/|$)`)); return uuidPath(match?.[1]); }
@@ -309,19 +305,15 @@ async function listAffiliatePayouts(env, affiliateId) {
     requests: (Array.isArray(requests) ? requests : []).map(payoutRequestView).filter(Boolean),
   };
 }
-function payoutValidationError(message) { return /already pending|Add a payout method|minimum payout|available balance|Unsupported payout method|not configured for this country|wallet address|PayPal email|payout details|Memo or tag|Payout method data|Affiliate account was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(String(message || "")); }
+function payoutValidationError(message) { return /already pending|Add a crypto payout method|minimum payout|available balance|Unsupported cryptocurrency|Unsupported payout method|not configured for this country|wallet address|Memo or tag|Payout method data|Affiliate account was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(String(message || "")); }
 function payoutConfigError(message) { return /Payout encryption is not configured/i.test(String(message || "")); }
 async function adminPayoutRequestView(env, row) {
   const view = payoutRequestView(row);
   if (!view) return null;
   let walletAddress = "";
-  let paypalEmail = "";
-  let otherDetails = "";
   let memoTag = "";
   try {
     if (view.methodType === "crypto_transfer" && row.wallet_address_ciphertext) walletAddress = await decryptPayoutSecret(env, row.wallet_address_ciphertext);
-    if (view.methodType === "paypal" && row.paypal_email_ciphertext) paypalEmail = await decryptPayoutSecret(env, row.paypal_email_ciphertext);
-    if (view.methodType === "other" && row.other_details_ciphertext) otherDetails = await decryptPayoutSecret(env, row.other_details_ciphertext);
     if (row.memo_tag_ciphertext) memoTag = await decryptPayoutSecret(env, row.memo_tag_ciphertext);
   } catch { /* the admin view stays masked if encryption configuration is unavailable */ }
   return {
@@ -335,8 +327,6 @@ async function adminPayoutRequestView(env, row) {
     reviewerId: row.reviewer_id || null,
     paidBy: row.paid_by || null,
     walletAddress,
-    paypalEmail,
-    otherDetails,
     memoTag,
   };
 }
@@ -442,37 +432,16 @@ async function handleUserEndpoint(request, env) {
       const body = await request.json().catch(() => ({}));
       const countryCode = payoutText(body.countryCode, 8).toUpperCase();
       const methodType = payoutText(body.methodType, 32).toLowerCase();
-      let currency = payoutText(body.currency, 12).toUpperCase();
-      let network = payoutText(body.network, 24).toUpperCase();
+      const currency = payoutText(body.currency, 12).toUpperCase();
+      const network = payoutText(body.network, 24).toUpperCase();
       if (!/^[A-Z]{2}$/.test(countryCode)) throw new Error("Enter a valid two-letter country code.");
-      if (!["crypto_transfer", "paypal", "other"].includes(methodType)) throw new Error("Choose a supported payout method.");
-      if (methodType === "crypto_transfer") { currency = "USDT"; network = "TRC20"; } else { currency = "USD"; network = ""; }
-      let walletCiphertext = null;
-      let paypalCiphertext = null;
-      let otherCiphertext = null;
-      let destinationLast4 = null;
-      let destinationPreview = "";
-      if (methodType === "crypto_transfer") {
-        const walletAddress = validatePayoutWallet(body.walletAddress);
-        const memoTag = validatePayoutMemo(body.memoTag);
-        walletCiphertext = await encryptPayoutSecret(env, walletAddress);
-        destinationLast4 = walletAddress.slice(-4).toUpperCase();
-        destinationPreview = "Wallet ending ••••" + destinationLast4;
-        const memoCiphertext = memoTag ? await encryptPayoutSecret(env, memoTag) : null;
-        const raw = await callPayoutRpc(env, "save_affiliate_payout_method", { p_affiliate_id: user.id, p_country_code: countryCode, p_method_type: methodType, p_currency: currency, p_network: network, p_wallet_address_ciphertext: walletCiphertext, p_destination_last4: destinationLast4, p_paypal_email_ciphertext: null, p_other_details_ciphertext: null, p_destination_preview: destinationPreview, p_memo_tag_ciphertext: memoCiphertext });
-        const result = Array.isArray(raw) ? raw[0] : raw;
-        return json(payoutMethodView({ id: result?.id, country_code: result?.countryCode, method_type: result?.methodType, currency: result?.currency, network: result?.network, destination_preview: result?.destinationPreview, destination_last4: result?.destinationLast4, hasMemoTag: result?.hasMemoTag, created_at: result?.createdAt, updated_at: result?.updatedAt }), 200, request, env);
-      }
-      if (methodType === "paypal") {
-        const paypalEmail = validatePayoutEmail(body.paypalEmail);
-        paypalCiphertext = await encryptPayoutSecret(env, paypalEmail);
-        destinationPreview = maskPayoutEmail(paypalEmail);
-      } else {
-        const otherDetails = validatePayoutOtherDetails(body.otherDetails);
-        otherCiphertext = await encryptPayoutSecret(env, otherDetails);
-        destinationPreview = "Manual review details saved";
-      }
-      const raw = await callPayoutRpc(env, "save_affiliate_payout_method", { p_affiliate_id: user.id, p_country_code: countryCode, p_method_type: methodType, p_currency: currency, p_network: network, p_wallet_address_ciphertext: walletCiphertext, p_destination_last4: destinationLast4, p_paypal_email_ciphertext: paypalCiphertext, p_other_details_ciphertext: otherCiphertext, p_destination_preview: destinationPreview, p_memo_tag_ciphertext: null });
+      if (methodType !== "crypto_transfer") throw new Error("Only crypto transfer payouts are supported.");
+      const walletAddress = validatePayoutWallet(body.walletAddress);
+      const memoTag = validatePayoutMemo(body.memoTag);
+      const walletCiphertext = await encryptPayoutSecret(env, walletAddress);
+      const destinationLast4 = walletAddress.slice(-4).toUpperCase();
+      const memoCiphertext = memoTag ? await encryptPayoutSecret(env, memoTag) : null;
+      const raw = await callPayoutRpc(env, "save_affiliate_payout_method", { p_affiliate_id: user.id, p_country_code: countryCode, p_method_type: "crypto_transfer", p_currency: currency, p_network: network, p_wallet_address_ciphertext: walletCiphertext, p_wallet_address_last4: destinationLast4, p_memo_tag_ciphertext: memoCiphertext });
       const result = Array.isArray(raw) ? raw[0] : raw;
       return json(payoutMethodView({ id: result?.id, country_code: result?.countryCode, method_type: result?.methodType, currency: result?.currency, network: result?.network, destination_preview: result?.destinationPreview, destination_last4: result?.destinationLast4, hasMemoTag: result?.hasMemoTag, created_at: result?.createdAt, updated_at: result?.updatedAt }), 200, request, env);
     }

@@ -14,14 +14,14 @@ export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; ac
 export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
 export interface StreakSnapshot { currentStreak: number; longestStreak: number; lastActivityDate: string | null; }
 export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; }
-export type PayoutMethodType = "crypto_transfer" | "paypal" | "other";
+export type PayoutMethodType = "crypto_transfer";
 export type PayoutRequestStatus = "pending" | "approved" | "paid" | "rejected" | "cancelled";
 export interface PayoutMethodOption { methodType: PayoutMethodType; currency: string; network: string; displayName: string; memoRequired: boolean; countryCodes: string[]; }
 export interface PayoutMethod { id: string; countryCode: string; methodType: PayoutMethodType; currency: string; network: string; destinationPreview: string; destinationLast4: string | null; hasMemoTag: boolean; createdAt: string; updatedAt: string; }
 export interface PayoutRequest { id: string; requestedAmount: number; currency: "USD"; status: PayoutRequestStatus; availableBalanceSnapshot: number; countryCode: string; methodType: PayoutMethodType; methodCurrency: string; network: string; destinationPreview: string; destinationLast4: string | null; hasMemoTag: boolean; userMessage: string | null; createdAt: string; reviewedAt: string | null; paidAt: string | null; paymentReference: string | null; }
 export interface AffiliatePayouts { method: PayoutMethod | null; options: PayoutMethodOption[]; requests: PayoutRequest[]; }
-export interface SavePayoutMethodInput { countryCode: string; methodType: PayoutMethodType; currency: string; network: string; walletAddress?: string; paypalEmail?: string; otherDetails?: string; memoTag?: string; }
-export interface AdminPayoutRequest extends PayoutRequest { affiliateId: string; affiliateName: string; affiliateEmail: string | null; payoutMethodId: string; requestNote: string; adminNotes: string | null; walletAddress: string; paypalEmail: string; otherDetails: string; memoTag: string; reviewerId: string | null; paidBy: string | null; }
+export interface SavePayoutMethodInput { countryCode: string; methodType: "crypto_transfer"; currency: string; network: string; walletAddress: string; memoTag?: string; }
+export interface AdminPayoutRequest extends PayoutRequest { affiliateId: string; affiliateName: string; affiliateEmail: string | null; payoutMethodId: string; requestNote: string; adminNotes: string | null; walletAddress: string; memoTag: string; reviewerId: string | null; paidBy: string | null; }
 export interface AdminPayoutSummary { pendingCount: number; pendingAmount: number; paidCount: number; paidAmount: number; }
 export interface AdminPayoutsResponse { summary: AdminPayoutSummary; requests: AdminPayoutRequest[]; }
 
