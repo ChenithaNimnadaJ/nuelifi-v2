@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, robots] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -16,6 +16,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/lib/paddle.ts"),
   read("src/components/PaddlePricing.tsx"),
   read("src/App.tsx"),
+  read("public/robots.txt"),
 ]);
 
 const typescript = await import("typescript");
@@ -65,6 +66,25 @@ test("authenticated auth routes use private dashboard metadata", () => {
   assert.match(app, /const authGuardRoute = Boolean\(sessionUser && authMode/);
   assert.match(app, /applySeoMetadata\(publicPage, authGuardRoute \? null : authMode, privateRoute\)/);
   assert.match(app, /\[publicPage, authMode, sessionUser\?\.id\]/);
+});
+
+test("admin review uses the private /adminneu path and retires /admin", () => {
+  assert.ok(app.includes('window.location.pathname === "/adminneu"'));
+  assert.ok(app.includes('window.history.replaceState(null, "", "/adminneu")'));
+  assert.ok(!app.includes('window.location.pathname === "/admin"'));
+  assert.ok(!app.includes('window.history.replaceState(null, "", "/admin")'));
+  assert.ok(worker.includes('if (url.pathname === "/admin")'));
+  assert.ok(worker.includes('status: 404'));
+});
+
+test("private admin HTML is noindex and excluded from the sitemap", () => {
+  assert.match(worker, /function renderPrivateSeo\(html, title = "Neulifi — Private space"\)/);
+  assert.ok(worker.includes('requestedUrl.pathname === "/adminneu" ? "Neulifi — Private payout review"'));
+  assert.match(worker, /const privateRoute =/);
+  assert.ok(worker.includes("adminneu"));
+  assert.ok(worker.includes('x-robots-tag", "noindex, nofollow"'));
+  assert.match(robots, /Disallow: \/adminneu/);
+  assert.doesNotMatch(robots, /Sitemap:.*adminneu/);
 });
 
 test("Paddle unavailable states do not expose internal configuration names", () => {
