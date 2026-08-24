@@ -206,3 +206,26 @@ AFFECTED SYSTEMS:
 Production database, auth, usage accounting, AI analysis, QA data management.
 RECOMMENDED FUTURE APPROACH:
 Build an isolated staging/fixture harness in a separate authorized phase; do not alter production to complete these tests.
+
+---
+
+ISSUE:
+Server-scheduled Web Push delivery and push-subscription persistence are not introduced in this controlled notification release.
+LOCATION:
+Supabase schema/RLS, Supabase Edge Functions, Cloudflare scheduled processing, VAPID credentials, and public/sw.js push handling.
+OBSERVED BEHAVIOR:
+The application has a working service worker and authenticated profile preferences, but no deployed push-subscription table, secure push-delivery function, VAPID key management, or scheduled notification processor.
+EXPECTED BEHAVIOR:
+Opt-in users should receive at most one deterministic, data-backed reminder per local day and three per local week, including when the app is not open, with secure subscription storage and timezone-aware scheduling.
+WHY IT SHOULD BE FIXED:
+True background delivery is required for complete PWA notifications, but must not be simulated by claiming that foreground-only reminders work while the app is closed.
+PROPOSED FIX:
+Design and review a dedicated user-scoped push-subscriptions table with strict RLS, encrypted/secure subscription key handling, server-side VAPID configuration, an idempotent Edge Function or scheduled Worker processor, delivery-failure cleanup, timezone-aware eligibility, and end-to-end browser tests before enabling production delivery.
+ESTIMATED BREAKAGE RISK:
+75%.
+WHY RISK IS >= 50%:
+This crosses authentication-adjacent database policy, secret management, scheduled execution, service-worker push events, browser permission behavior, and production delivery semantics. A partial or incorrect implementation could expose subscription material, send duplicate or mistimed reminders, or affect existing Supabase and Cloudflare operations.
+AFFECTED SYSTEMS:
+Supabase schema and RLS, Edge Functions, Cloudflare Worker scheduling, VAPID secrets, service-worker lifecycle, browser notification permissions, timezone and frequency enforcement.
+RECOMMENDED FUTURE APPROACH:
+Implement only after a migration/RLS review, test with isolated subscriptions in multiple IANA timezones, validate cron idempotency and failure cleanup, and release behind an explicit feature flag with rollback evidence. The current release provides permission-aware foreground notifications and truthful planned-delivery copy instead.

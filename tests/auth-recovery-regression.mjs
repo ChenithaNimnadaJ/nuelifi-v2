@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData, notifications] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -19,6 +19,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/components/MealFlow.tsx"),
   read("public/robots.txt"),
   read("src/lib/supabaseData.ts"),
+  read("src/lib/notifications.ts"),
 ]);
 
 const typescript = await import("typescript");
@@ -143,4 +144,21 @@ test("meal recommendations stay bounded and require explicit per-action task add
   assert.match(mealFlow, /Already on your plan/);
   assert.match(mealFlow, /Nothing specific is needed right now/);
   assert.match(mealFlow, /Nothing to fix right now/);
+});
+
+test("notifications remain optional, permission-safe, and deterministic", () => {
+  assert.match(app, /Stay on track with Neulifi/);
+  assert.match(app, /requestBrowserNotificationPermission/);
+  assert.match(app, /notificationDayHistoryKey/);
+  assert.match(app, /notificationWeekHistoryKey/);
+  assert.match(app, /Not now/);
+  assert.match(app, /Browser notifications are blocked/);
+  assert.match(app, /does not request permission automatically/);
+  assert.match(notifications, /localHour/);
+  assert.match(notifications, /sentToday/);
+  assert.match(notifications, /sentThisWeek/);
+  assert.match(notifications, /status !== "missed"/);
+  assert.match(notifications, /category: "action"/);
+  assert.match(notifications, /category: "meal"/);
+  assert.match(notifications, /category: "weekly"/);
 });

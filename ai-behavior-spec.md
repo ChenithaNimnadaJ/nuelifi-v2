@@ -72,7 +72,7 @@ The Profile screen must make the following controls real:
 - Edit and persist the user name and health goals.
 - Edit and persist known conditions, allergies/intolerances, dietary preference, and activity level.
 - Persist appearance and the currently supported account preferences.
-- Avoid presenting email reminders or notification services as active functionality until a notification provider and scheduler exist. Unsupported reminder controls should be labeled as planned or disabled rather than pretending to send email.
+- Do not present email reminders or server-scheduled push as active functionality until a provider and scheduler exist. A user-controlled browser notification may be enabled only after explicit permission, with local deterministic frequency limits; unsupported, denied, or unscheduled delivery controls must remain clearly labeled.
 - Show a Pro preview with planned entitlements and an explicit “billing not connected yet” state. It must not pretend that a payment has been completed.
 
 ## Pro boundary for this iteration

@@ -12,6 +12,8 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+self.addEventListener("notificationclick", (event) => { event.notification.close(); event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => { const target = new URL("/app", self.location.origin).href; const existing = clientList.find((client) => "focus" in client); if (existing) { void existing.focus(); if ("navigate" in existing) return existing.navigate(target); return existing; } return self.clients.openWindow(target); })); });
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
