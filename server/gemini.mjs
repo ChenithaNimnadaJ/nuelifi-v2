@@ -1,6 +1,7 @@
 import { analysisSchema, buildMealPrompt, normalizeMealAnalysis } from "./normalize.mjs";
 
-const supportedModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.7-flash"];
+// Gemini currently rejects the 2.5 Flash identifiers for new users; keep the live fallback list on supported Flash models.
+const supportedModels = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.5-flash"];
 const defaultModels = supportedModels;
 
 function modelsFor(keyName) {
@@ -69,7 +70,7 @@ export async function analyzeMealWithGemini({ imageUrl, mealName = "Meal", conte
   for (const [keyName, apiKey] of providers) {
     for (const model of modelsFor(keyName)) {
       try {
-        return normalizeMealAnalysis(await requestModel(apiKey, model, image, mealName, context, analysisLevel));
+        return normalizeMealAnalysis(await requestModel(apiKey, model, image, mealName, context, analysisLevel), context);
       } catch (error) {
         lastError = error;
         console.warn(`Gemini ${keyName} model ${model} unavailable: ${error instanceof Error ? error.message : "unknown error"}`);

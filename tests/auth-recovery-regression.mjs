@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, robots] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -16,6 +16,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/lib/paddle.ts"),
   read("src/components/PaddlePricing.tsx"),
   read("src/App.tsx"),
+  read("src/components/MealFlow.tsx"),
   read("public/robots.txt"),
 ]);
 
@@ -110,4 +111,20 @@ test("admin wallet details distinguish decrypted addresses from synthetic QA pla
   assert.match(admin, /selected\.walletAddressStatus === "decrypted"/);
   assert.match(admin, /QA placeholder — no real wallet address stored/);
   assert.match(admin, /Encrypted wallet details could not be opened\./);
+});
+
+test("meal recommendations stay bounded and require explicit per-action task adds", () => {
+  assert.match(worker, /const DEFAULT_GEMINI_MODELS = \["gemini-3\.5-flash-lite", "gemini-3\.6-flash", "gemini-3\.7-flash", "gemini-3\.5-flash"\]/);
+  assert.match(worker, /For dailyTasks only, return 0 to 2 short/);
+  assert.match(worker, /dailyTasks: \{ type: "ARRAY", items: \{ type: "STRING" \}, minItems: 0, maxItems: 2 \}/);
+  assert.match(worker, /function taskFamily\(value\)/);
+  assert.match(worker, /existingActions/);
+  assert.match(worker, /return \[\.\.\.new Set\(selected\)\]/);
+  assert.match(app, /const addRecommendedTask = async \(actionId: string\)/);
+  assert.doesNotMatch(app, /const addRecommendedTasks = async/);
+  assert.match(mealFlow, /onAddTask: \(id: string\)/);
+  assert.match(mealFlow, /\+ Add to Tasks/);
+  assert.match(mealFlow, /No daily action is needed from this meal/);
+  assert.match(worker, /short walk after this meal/);
+  assert.match(worker, /Do not invent generic tasks for a balanced meal/);
 });
