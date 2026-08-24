@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData, notifications] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData, notifications, manifest, logo] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -20,6 +20,8 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("public/robots.txt"),
   read("src/lib/supabaseData.ts"),
   read("src/lib/notifications.ts"),
+  read("public/manifest.webmanifest"),
+  read("public/neulifi-logo.svg"),
 ]);
 
 const typescript = await import("typescript");
@@ -145,6 +147,13 @@ test("meal recommendations stay bounded and require explicit per-action task add
   assert.match(mealFlow, /Already on your plan/);
   assert.match(mealFlow, /Nothing specific is needed right now/);
   assert.match(mealFlow, /Nothing to fix right now/);
+});
+
+test("asset MIME mappings protect install metadata and the transparent logo", () => {
+  assert.ok(worker.includes('pathname.endsWith(".svg")) return "image/svg+xml; charset=utf-8"'));
+  assert.ok(worker.includes('pathname.endsWith(".webmanifest") || pathname.endsWith(".json")) return "application/manifest+json; charset=utf-8"'));
+  assert.match(manifest, /"start_url": "\/app"/);
+  assert.match(logo, /<svg[\s\S]*fill="#05b866"/);
 });
 
 test("notifications remain optional, permission-safe, and deterministic", () => {
