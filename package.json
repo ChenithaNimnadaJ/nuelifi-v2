@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "test:auth": "node --test tests/auth-recovery-regression.mjs",
     "preview": "vite preview",
     "backend": "node --env-file-if-exists=.env.local server/index.mjs",
     "backend:seed": "node --env-file-if-exists=.env.local server/seed.mjs",

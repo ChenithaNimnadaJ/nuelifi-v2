@@ -9,6 +9,12 @@ export const supabase = url && publishableKey ? createClient(url, publishableKey
   auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false, flowType: "pkce" },
 }) : null;
 
+// Password-reset links must be usable when the original tab is closed or the link is opened in a new tab.
+// Keep ordinary sign-in PKCE behavior unchanged, but request recovery links without a browser-bound verifier.
+export const recoverySupabase = url && publishableKey ? createClient(url, publishableKey, {
+  auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false, flowType: "implicit" },
+}) : null;
+
 function tokenTimes(accessToken: string) {
   try {
     const encoded = accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
