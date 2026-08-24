@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -12,6 +12,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/lib/authErrors.ts"),
   read("src/components/ProductScreens.tsx"),
   read("src/components/AdminPayoutDashboard.tsx"),
+  read("cloudflare/worker.mjs"),
 ]);
 
 const typescript = await import("typescript");
@@ -50,6 +51,11 @@ test("provider rate limits become safe, actionable messages", () => {
   assert.match(friendlyAuthError(new Error("over_email_send_rate_limit"), "fallback"), /wait a few minutes/);
   assert.match(friendlyAuthError(new Error("Auth session missing!"), "fallback"), /recovery session is no longer active/);
   assert.equal(friendlyAuthError(new Error("Unexpected end of JSON input"), "fallback"), "fallback");
+});
+
+test("successful empty account RPC responses do not leak a JSON parse error", () => {
+  assert.match(worker, /async function callUserRpc[\s\S]*?const text = await response\.text\(\); if \(!text\.trim\(\)\) return null;[\s\S]*?JSON\.parse\(text\)/);
+  assert.match(worker, /pathname === "\/api\/user\/ensure-records"[\s\S]*?await callUserRpc\(env, "ensure_user_records"/);
 });
 
 test("payout copy and active surfaces remain crypto-only", () => {
