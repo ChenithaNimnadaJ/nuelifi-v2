@@ -62,6 +62,7 @@ h1 { font-family: 'Inter', system-ui, sans-serif; font-size: clamp(25px, 4vw, 35
 h2 { font-size: 17px; letter-spacing: -.04em; margin: 0; }
 h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 .screen-subtitle, .screen-intro { color: var(--muted); font-size: 13px; line-height: 1.6; margin: -12px 0 22px; }
+.greeting .screen-subtitle { margin: 5px 0 22px; }
 .screen-intro { font-size: 14px; margin: 4px 0 22px; max-width: 620px; }
 .muted { color: var(--muted); }
 .badge { align-items: center; background: var(--brand-soft); border-radius: 99px; color: var(--brand-strong); display: inline-flex; font-size: 11px; font-weight: 600; gap: 4px; padding: 5px 10px; white-space: nowrap; }
@@ -1142,7 +1143,7 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 @media (max-width:640px){.payout-section{padding:18px}.payout-section-heading{flex-direction:column}.payout-security-badge{align-self:flex-start}.payout-method-grid,.payout-request-grid{grid-template-columns:1fr}.payout-method-saved,.payout-history-row{align-items:stretch;flex-direction:column}.payout-inline-actions{justify-content:space-between}.payout-form-actions{justify-content:stretch;flex-direction:column}.payout-form-actions>*{width:100%}.payout-status{align-self:flex-start}}
 
 
-/* Owner payout review: same product surfaces, with a denser two-column queue on wider screens. */
+/* Neulifi payout review: same product surfaces, with a denser two-column queue on wider screens. */
 .admin-payout-screen { max-width: 1180px; }
 .admin-payout-screen .screen-heading-row { align-items: flex-start; }
 .admin-safety-note { margin-bottom: 18px; }

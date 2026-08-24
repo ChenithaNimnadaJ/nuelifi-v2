@@ -212,8 +212,8 @@ export default function App() {
   if (window.location.pathname === "/auth/confirm") return <AuthConfirm passwordRecovery={isPasswordRecovery()} onAuthenticated={completeAuthRedirect} themeMode={themeMode} onThemeChange={changeTheme}/>;
   if (window.location.pathname === "/admin") {
     if (!supabase) return <AuthScreen initialMode="signin" initialMessage="Account services are not configured for this build. Please contact Neulifi support." themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={completeAuthRedirect}/>;
-    if (!sessionUser) return <AuthScreen initialMode="signin" initialMessage="Sign in with the owner account to open payout review." themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={enterAdmin}/>;
-    return <Suspense fallback={<div className="auth-loading">Loading owner payout review…</div>}><LazyAdminPayoutDashboard onBack={enterAuthenticatedApp}/></Suspense>;
+    if (!sessionUser) return <AuthScreen initialMode="signin" initialMessage="Sign in with your Neulifi review account to open payout review." themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={enterAdmin}/>;
+    return <Suspense fallback={<div className="auth-loading">Loading Neulifi payout review…</div>}><LazyAdminPayoutDashboard onBack={enterAuthenticatedApp}/></Suspense>;
   }
   if (isPasswordRecovery()) return <AuthScreen passwordRecovery initialMessage={authReturnMessage()} themeMode={themeMode} onThemeChange={changeTheme} onAuthenticated={completeAuthRedirect}/>
   if (window.location.pathname === "/welcome") return <Welcome signedIn={Boolean(sessionUser)} onContinue={enterAuthenticatedApp} onSignUp={() => navigateAuth("signup", "/welcome")}/>;

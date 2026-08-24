@@ -54,8 +54,10 @@ test("provider rate limits become safe, actionable messages", () => {
 
 test("payout copy and active surfaces remain crypto-only", () => {
   assert.match(productScreens, /Where should we send your payout\?/);
-  assert.doesNotMatch(productScreens, /Where should the owner send it/);
+  assert.match(productScreens, /Payout request saved for Neulifi review/);
+  assert.doesNotMatch(productScreens, /\bowner\b/i);
   for (const source of [productScreens, admin]) {
     assert.doesNotMatch(source, /PayPal|Wise|bank transfer|Other payout method|other payout method/i);
+    assert.doesNotMatch(source, /\bowner\b/i);
   }
 });
