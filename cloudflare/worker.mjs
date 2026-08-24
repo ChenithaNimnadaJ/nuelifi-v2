@@ -312,10 +312,24 @@ async function adminPayoutRequestView(env, row) {
   if (!view) return null;
   let walletAddress = "";
   let memoTag = "";
+  let walletAddressStatus = view.methodType === "crypto_transfer" ? "missing" : "unavailable";
+  let memoTagStatus = "none";
+  const isSyntheticQa = /\bSYNTHETIC QA ONLY\b/i.test(String(row.request_note || ""));
   try {
-    if (view.methodType === "crypto_transfer" && row.wallet_address_ciphertext) walletAddress = await decryptPayoutSecret(env, row.wallet_address_ciphertext);
-    if (row.memo_tag_ciphertext) memoTag = await decryptPayoutSecret(env, row.memo_tag_ciphertext);
-  } catch { /* the admin view stays masked if encryption configuration is unavailable */ }
+    if (view.methodType === "crypto_transfer" && row.wallet_address_ciphertext) {
+      walletAddress = await decryptPayoutSecret(env, row.wallet_address_ciphertext);
+      walletAddressStatus = "decrypted";
+    } else if (isSyntheticQa) {
+      walletAddressStatus = "synthetic_placeholder";
+    }
+    if (row.memo_tag_ciphertext) {
+      memoTag = await decryptPayoutSecret(env, row.memo_tag_ciphertext);
+      memoTagStatus = "decrypted";
+    }
+  } catch {
+    walletAddressStatus = isSyntheticQa ? "synthetic_placeholder" : "unavailable";
+    if (row.memo_tag_ciphertext) memoTagStatus = "unavailable";
+  }
   return {
     ...view,
     affiliateId: row.affiliate_id,
@@ -327,7 +341,10 @@ async function adminPayoutRequestView(env, row) {
     reviewerId: row.reviewer_id || null,
     paidBy: row.paid_by || null,
     walletAddress,
+    walletAddressStatus,
     memoTag,
+    memoTagStatus,
+    isSyntheticQa,
   };
 }
 async function requirePayoutAdmin(request, env) { const user = await verifyUser(request, env); const configuredId = uuidPath(env.PAYOUT_ADMIN_USER_ID || env.ADMIN_USER_ID); if (!configuredId || configuredId !== user.id) throw new Error("Not allowed"); return user; }

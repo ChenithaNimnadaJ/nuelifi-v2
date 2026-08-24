@@ -102,3 +102,12 @@ test("payout copy and active surfaces remain crypto-only", () => {
     assert.doesNotMatch(source, /\bowner\b/i);
   }
 });
+
+test("admin wallet details distinguish decrypted addresses from synthetic QA placeholders", () => {
+  assert.match(worker, /walletAddressStatus = "decrypted"/);
+  assert.match(worker, /walletAddressStatus = isSyntheticQa \? "synthetic_placeholder" : "unavailable"/);
+  assert.match(worker, /isSyntheticQa/);
+  assert.match(admin, /selected\.walletAddressStatus === "decrypted"/);
+  assert.match(admin, /QA placeholder — no real wallet address stored/);
+  assert.match(admin, /Encrypted wallet details could not be opened\./);
+});

@@ -21,7 +21,9 @@ export interface PayoutMethod { id: string; countryCode: string; methodType: Pay
 export interface PayoutRequest { id: string; requestedAmount: number; currency: "USD"; status: PayoutRequestStatus; availableBalanceSnapshot: number; countryCode: string; methodType: PayoutMethodType; methodCurrency: string; network: string; destinationPreview: string; destinationLast4: string | null; hasMemoTag: boolean; userMessage: string | null; createdAt: string; reviewedAt: string | null; paidAt: string | null; paymentReference: string | null; }
 export interface AffiliatePayouts { method: PayoutMethod | null; options: PayoutMethodOption[]; requests: PayoutRequest[]; }
 export interface SavePayoutMethodInput { countryCode: string; methodType: "crypto_transfer"; currency: string; network: string; walletAddress: string; memoTag?: string; }
-export interface AdminPayoutRequest extends PayoutRequest { affiliateId: string; affiliateName: string; affiliateEmail: string | null; payoutMethodId: string; requestNote: string; adminNotes: string | null; walletAddress: string; memoTag: string; reviewerId: string | null; paidBy: string | null; }
+export type AdminWalletAddressStatus = "decrypted" | "synthetic_placeholder" | "unavailable" | "missing";
+export type AdminMemoTagStatus = "decrypted" | "unavailable" | "none";
+export interface AdminPayoutRequest extends PayoutRequest { affiliateId: string; affiliateName: string; affiliateEmail: string | null; payoutMethodId: string; requestNote: string; adminNotes: string | null; walletAddress: string; walletAddressStatus: AdminWalletAddressStatus; memoTag: string; memoTagStatus: AdminMemoTagStatus; isSyntheticQa: boolean; reviewerId: string | null; paidBy: string | null; }
 export interface AdminPayoutSummary { pendingCount: number; pendingAmount: number; paidCount: number; paidAmount: number; }
 export interface AdminPayoutsResponse { summary: AdminPayoutSummary; requests: AdminPayoutRequest[]; }
 
