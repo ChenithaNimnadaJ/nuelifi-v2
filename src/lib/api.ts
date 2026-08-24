@@ -13,7 +13,14 @@ export interface Action { id: string; userId: string; mealId: string | null; tit
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
 export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
 export interface StreakSnapshot { currentStreak: number; longestStreak: number; lastActivityDate: string | null; }
-export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; standardProCommission: number; standardPremiumCommission: number; highVolumeProCommission: number; highVolumePremiumCommission: number; highVolumeThreshold: number; }
+export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; }
+export type PayoutRequestStatus = "pending" | "approved" | "paid" | "rejected" | "cancelled";
+export type PayoutNotificationStatus = "pending" | "sent" | "failed";
+export interface PayoutMethodOption { methodType: "crypto_transfer"; currency: string; network: string; displayName: string; memoRequired: boolean; }
+export interface PayoutMethod { id: string; methodType: "crypto_transfer"; currency: string; network: string; walletAddressLast4: string; hasMemoTag: boolean; createdAt: string; updatedAt: string; }
+export interface PayoutRequest { id: string; requestedAmount: number; currency: "USD"; status: PayoutRequestStatus; availableBalanceSnapshot: number; methodType: "crypto_transfer"; methodCurrency: string; network: string; walletAddressLast4: string; hasMemoTag: boolean; userMessage: string | null; createdAt: string; reviewedAt: string | null; paidAt: string | null; paymentReference: string | null; notificationStatus: PayoutNotificationStatus; }
+export interface AffiliatePayouts { method: PayoutMethod | null; options: PayoutMethodOption[]; requests: PayoutRequest[]; }
+export interface SavePayoutMethodInput { methodType: "crypto_transfer"; currency: string; network: string; walletAddress: string; memoTag?: string; }
 
 const configuredApiUrl = String(import.meta.env.VITE_API_URL || "").trim();
 const API_URL = import.meta.env.MODE === "production" && /^(https?:)?\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredApiUrl) ? "" : configuredApiUrl.replace(/\/+$/, "");
@@ -52,6 +59,10 @@ export const neulifiApi = {
   completeAction: (actionId: string, completed = true) => request<Action>(`/api/user/actions/${encodeURIComponent(actionId)}`, { method: "PATCH", body: JSON.stringify({ completed }) }),
   ensureReferralCode: () => request<{ code: string }>("/api/user/referral-code"),
   referralSummary: () => request<ReferralSummary>("/api/user/referral-summary"),
+  payouts: () => request<AffiliatePayouts>("/api/user/payouts"),
+  savePayoutMethod: (input: SavePayoutMethodInput) => request<PayoutMethod>("/api/user/payout-method", { method: "POST", body: JSON.stringify(input) }),
+  removePayoutMethod: () => request<{ removed: boolean; pendingRequestsPreserved: boolean }>("/api/user/payout-method", { method: "DELETE" }),
+  requestPayout: (requestedAmount: number, requestNote = "") => request<PayoutRequest & { notificationMessage?: string }>("/api/user/payout-request", { method: "POST", body: JSON.stringify({ requestedAmount, requestNote }) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),
   subscription: (userId: string) => request(`/api/users/${userId}/subscription`),
   usage: async () => { const payload = await request<{ plan: PlanId; status: string; used: number; usage_limit: number; analysis_level: AnalysisLevel }>("/api/usage"); return { plan: payload.plan, status: payload.status, used: payload.used, usageLimit: payload.usage_limit, analysisLevel: payload.analysis_level } as UsageSnapshot; },
