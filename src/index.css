@@ -729,7 +729,7 @@ h3 { font-size: 14px; letter-spacing: -.025em; margin: 0; }
 
 
 /* Final theme repair: the vector is transparent and inherits the active brand token. */
-.brand-logo, .preview-mini-logo, .auth-icon-logo { background-color: var(--brand-strong); background-position: center; background-repeat: no-repeat; background-size: contain; -webkit-mask-image: url('/neulifi-logo.svg'); mask-image: url('/neulifi-logo.svg'); -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; }
+.brand-logo, .preview-mini-logo, .auth-icon-logo { background-color: var(--brand-strong); background-position: center; background-repeat: no-repeat; background-size: contain; -webkit-mask-image: url('/neulifi-logo-v2.svg'); mask-image: url('/neulifi-logo-v2.svg'); -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; }
 .auth-icon-logo { flex: 0 0 auto; height: 100%; width: 100%; }
 .auth-icon { background: var(--brand-soft); }
 .public-site { --public-paper: var(--bg); --public-line: var(--border); background: var(--bg); color: var(--text); }
