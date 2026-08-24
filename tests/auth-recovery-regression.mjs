@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -18,6 +18,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/App.tsx"),
   read("src/components/MealFlow.tsx"),
   read("public/robots.txt"),
+  read("src/lib/supabaseData.ts"),
 ]);
 
 const typescript = await import("typescript");
@@ -124,7 +125,22 @@ test("meal recommendations stay bounded and require explicit per-action task add
   assert.doesNotMatch(app, /const addRecommendedTasks = async/);
   assert.match(mealFlow, /onAddTask: \(id: string\)/);
   assert.match(mealFlow, /\+ Add to Tasks/);
-  assert.match(mealFlow, /No daily action is needed from this meal/);
+  assert.match(mealFlow, /Nothing specific is needed right now/);
   assert.match(worker, /short walk after this meal/);
   assert.match(worker, /Do not invent generic tasks for a balanced meal/);
+  assert.match(worker, /analysis reference time/);
+  assert.match(worker, /scheduled at/);
+  assert.match(worker, /function coveredDailyTasks\(items, context = \{\}\)/);
+  assert.match(worker, /alreadyOnPlan/);
+  assert.match(worker, /alreadyOnPlan: \{ type: "ARRAY", items: \{ type: "STRING" \}, minItems: 0, maxItems: 2 \}/);
+  assert.match(worker, /function isNextMealNutritionTask\(text\)/);
+  assert.match(worker, /next-meal-nutrition/);
+  assert.match(worker, /normalizeExistingPlanSignals/);
+  assert.match(supabaseData, /function isNextMealNutritionTask\(text: string\)/);
+  assert.match(app, /const completedActions = actions\.filter/);
+  assert.match(app, /const capturedAt = new Date\(\)\.toISOString\(\)/);
+  assert.match(mealFlow, /Your next best step/);
+  assert.match(mealFlow, /Already on your plan/);
+  assert.match(mealFlow, /Nothing specific is needed right now/);
+  assert.match(mealFlow, /Nothing to fix right now/);
 });

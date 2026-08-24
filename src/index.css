@@ -1076,6 +1076,7 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .result-action-copy small { color: var(--muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
 .result-action.completed .result-action-copy strong { color: var(--faint); text-decoration: line-through; }
 .result-action.completed .result-action-copy small { color: var(--faint); }
+.result-action-existing { cursor: default; }
 
 
 /* Free-plan ad placement: only the selected banner formats remain, each in a restrained product-aware slot. */
