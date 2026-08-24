@@ -112,6 +112,6 @@ function PaddlePlanCard({ tier, interval, price, loading, checkoutPlan, onSubscr
     <div className="plan-price">{loading && tier.planId !== "free" ? <span className="paddle-price-loading" aria-label="Loading price">…</span> : price}<small>{tier.planId === "free" ? "" : " / year"}</small></div>
     {tier.planId !== "free" && <div className="plan-annual-label">Billed annually · no free trial</div>}
     <div className="plan-features plan-features-premium">{tier.features.map((feature, index) => <span className={index === 0 ? "plan-feature-emphasis" : ""} key={feature}>✓ {feature}</span>)}</div>
-    <button className={`button ${highlighted ? "button-green" : "button-soft"}`} type="button" onClick={onSubscribe} disabled={loading && tier.planId !== "free" || tier.planId !== "free" && price === "Unavailable" || checkoutPlan === tier.planId}>{checkoutPlan === tier.planId ? "Opening…" : tier.planId === "free" ? "Start free" : price === "Unavailable" ? "Price unavailable" : "Subscribe"}</button>
+    <button className={`button ${price === "Unavailable" ? "button-soft" : highlighted ? "button-green" : "button-soft"}`} type="button" onClick={onSubscribe} disabled={loading && tier.planId !== "free" || tier.planId !== "free" && price === "Unavailable" || checkoutPlan === tier.planId}>{checkoutPlan === tier.planId ? "Opening…" : tier.planId === "free" ? "Start free" : price === "Unavailable" ? "Price unavailable" : "Subscribe"}</button>
   </article>;
 }

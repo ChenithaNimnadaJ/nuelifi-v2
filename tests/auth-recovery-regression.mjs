@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -13,6 +13,9 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/components/ProductScreens.tsx"),
   read("src/components/AdminPayoutDashboard.tsx"),
   read("cloudflare/worker.mjs"),
+  read("src/lib/paddle.ts"),
+  read("src/components/PaddlePricing.tsx"),
+  read("src/App.tsx"),
 ]);
 
 const typescript = await import("typescript");
@@ -56,6 +59,18 @@ test("provider rate limits become safe, actionable messages", () => {
 test("successful empty account RPC responses do not leak a JSON parse error", () => {
   assert.match(worker, /async function callUserRpc[\s\S]*?const text = await response\.text\(\); if \(!text\.trim\(\)\) return null;[\s\S]*?JSON\.parse\(text\)/);
   assert.match(worker, /pathname === "\/api\/user\/ensure-records"[\s\S]*?await callUserRpc\(env, "ensure_user_records"/);
+});
+
+test("authenticated auth routes use private dashboard metadata", () => {
+  assert.match(app, /const authGuardRoute = Boolean\(sessionUser && authMode/);
+  assert.match(app, /applySeoMetadata\(publicPage, authGuardRoute \? null : authMode, privateRoute\)/);
+  assert.match(app, /\[publicPage, authMode, sessionUser\?\.id\]/);
+});
+
+test("Paddle unavailable states do not expose internal configuration names", () => {
+  assert.doesNotMatch(paddle, /Set VITE_PADDLE_ENVIRONMENT|Set VITE_PADDLE_CLIENT_TOKEN/);
+  assert.match(paddle, /Paid plan checkout is temporarily unavailable/);
+  assert.match(paddlePricing, /price === "Unavailable" \? "button-soft"/);
 });
 
 test("payout copy and active surfaces remain crypto-only", () => {

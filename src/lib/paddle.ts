@@ -48,16 +48,16 @@ export interface PaddleRuntimeConfig {
 function requiredEnvironment(): Environments {
   const value = String(import.meta.env.VITE_PADDLE_ENVIRONMENT || "").trim().toLowerCase();
   if (value !== "production" && value !== "sandbox") {
-    throw new Error("Paddle environment is not configured. Set VITE_PADDLE_ENVIRONMENT to production or sandbox.");
+    throw new Error("Paid plan checkout is temporarily unavailable. Please try again later.");
   }
   return value;
 }
 
 function requiredClientToken(environment: Environments): string {
   const token = String(import.meta.env.VITE_PADDLE_CLIENT_TOKEN || "").trim();
-  if (!token) throw new Error("Paddle checkout is not configured. Set VITE_PADDLE_CLIENT_TOKEN.");
-  if (environment === "production" && !token.startsWith("live_")) throw new Error("Paddle production checkout requires a live_ client-side token.");
-  if (environment === "sandbox" && !token.startsWith("test_")) throw new Error("Paddle sandbox checkout requires a test_ client-side token.");
+  if (!token) throw new Error("Paid plan checkout is temporarily unavailable. Please try again later.");
+  if (environment === "production" && !token.startsWith("live_")) throw new Error("Paid plan checkout is temporarily unavailable. Please try again later.");
+  if (environment === "sandbox" && !token.startsWith("test_")) throw new Error("Paid plan checkout is temporarily unavailable. Please try again later.");
   return token;
 }
 
