@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { BrandMark } from "./BrandMark";
 
 type ThemeMode = "system" | "light" | "dark";
+function friendlyAuthError(value: unknown, fallback: string) { const raw = value instanceof Error ? value.message.trim() : value && typeof value === "object" && "message" in value ? String((value as { message?: unknown }).message || "").trim() : ""; if (!raw || /unexpected(?: end)? of json|json input|unexpected token/i.test(raw)) return fallback; if (/failed to fetch|network/i.test(raw)) return "We could not reach the account service. Check your connection and try again."; return raw; }
 
 type AuthScreenProps = {
   onAuthenticated: () => void;
@@ -38,8 +39,8 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
 
   const returnPath = window.localStorage.getItem("neulifi-auth-return-path") === "/welcome" ? "/welcome" : "/app";
   const configuredAuthOrigin = String(import.meta.env.VITE_AUTH_REDIRECT_URL || "").trim().replace(/\/+$/, "");
-  const authOrigin = configuredAuthOrigin || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? window.location.origin : "https://neulifi.online");
-  const redirectTo = new URL(returnPath, authOrigin).toString();
+  const normalizedAuthOrigin = configuredAuthOrigin === "https://nuelifi.chenithanimnadaj.workers.dev" ? "https://neulifi.online" : configuredAuthOrigin;
+  const authOrigin = normalizedAuthOrigin || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? window.location.origin : "https://neulifi.online");
   const magicLinkRedirectTo = new URL("/auth/confirm", authOrigin).toString();
   const recoveryRedirectTo = new URL("/login?reset=1", authOrigin).toString();
   const returningFromCheckout = returnPath === "/welcome";
@@ -69,7 +70,7 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
         : mode === "signup"
           ? "Check your email for a secure link to finish creating your private Neulifi space."
           : "If an account exists for this email, a secure sign-in link is on its way.");
-    } catch (value) { setMessage(value instanceof Error ? value.message : "We could not send the sign-in link yet. Please try again."); }
+    } catch (value) { setMessage(friendlyAuthError(value, "We could not send the sign-in link yet. Please try again.")); }
     finally { setBusy(false); }
   };
 
@@ -78,10 +79,10 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
     setBusy(true);
     setMessage("");
     try {
-      const result = await supabase.auth.resend({ type: "signup", email: verificationEmail.trim(), options: { emailRedirectTo: redirectTo } });
+      const result = await supabase.auth.resend({ type: "signup", email: verificationEmail.trim(), options: { emailRedirectTo: magicLinkRedirectTo } });
       if (result.error) throw result.error;
       setMessage("A new verification email is on its way. Check your inbox and spam folder.");
-    } catch (value) { setMessage(value instanceof Error ? value.message : "We could not resend the verification email yet. Please try again."); }
+    } catch (value) { setMessage(friendlyAuthError(value, "We could not resend the verification email yet. Please try again.")); }
     finally { setBusy(false); }
   };
 
@@ -96,7 +97,7 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
       if (result.error) throw result.error;
       setResetSent(true);
       setMessage("If an account exists for that email, a password-reset link is on its way.");
-    } catch (value) { setMessage(value instanceof Error ? value.message : "We could not start the password reset. Please try again."); }
+    } catch (value) { setMessage(friendlyAuthError(value, "We could not start the password reset. Please try again.")); }
     finally { setBusy(false); }
   };
 
@@ -116,15 +117,16 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
       }
       const result = mode === "signin"
         ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
-        : await supabase.auth.signUp({ email: email.trim(), password, options: { data: { name: name.trim() }, emailRedirectTo: redirectTo } });
+        : await supabase.auth.signUp({ email: email.trim(), password, options: { data: { name: name.trim() }, emailRedirectTo: magicLinkRedirectTo } });
       if (result.error) {
-        if (/confirm|verified|verification/i.test(result.error.message) && mode === "signin") setVerificationEmail(email.trim());
-        setMessage(/invalid login credentials/i.test(result.error.message) ? "The email or password did not match. Check them and try again." : result.error.message);
+        const authMessage = friendlyAuthError(result.error, "Authentication could not be completed. Please try again.");
+        if (/confirm|verified|verification/i.test(authMessage) && mode === "signin") setVerificationEmail(email.trim());
+        setMessage(/invalid login credentials/i.test(authMessage) ? "The email or password did not match. Check them and try again." : authMessage);
         return;
       }
       if (result.data.session) { onAuthenticated(); return; }
       if (mode === "signup") { setVerificationEmail(email.trim()); setMessage(returningFromCheckout ? "Check your email to confirm your account. After confirmation, return here and Neulifi will connect a matching annual purchase." : "Check your email to confirm your account. The confirmation link will return you to Neulifi."); }
-    } catch (value) { setMessage(value instanceof Error ? value.message : "Authentication could not be completed. Please try again."); }
+      } catch (value) { setMessage(friendlyAuthError(value, "Authentication could not be completed. Please try again.")); }
     finally { setBusy(false); }
   };
 

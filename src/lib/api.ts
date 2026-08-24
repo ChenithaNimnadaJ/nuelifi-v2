@@ -23,9 +23,12 @@ async function request<T>(path: string, options?: RequestInit, allowRefresh = tr
   const timeout = window.setTimeout(() => controller.abort(), 60000);
   try {
     const response = await fetch(`${API_URL}${path}`, { ...options, signal: controller.signal, headers: { "content-type": "application/json", ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}), ...(options?.headers || {}) } });
-    const payload = await response.json().catch(() => ({}));
+    let payload: unknown = null;
+    let malformed = false;
+    try { payload = await response.json(); } catch { malformed = true; }
     if (!response.ok && allowRefresh && response.status === 401 && await refreshHealthySession()) return request<T>(path, options, false);
-    if (!response.ok) throw new Error(payload.error || "Neulifi API request failed");
+    if (!response.ok) { const serverMessage = payload && typeof payload === "object" && "error" in payload ? String((payload as { error?: unknown }).error || "").trim() : ""; throw new Error(serverMessage || (malformed ? `Neulifi returned an unexpected response (${response.status}). Please try again.` : "Neulifi API request failed")); }
+    if (malformed || payload === null) throw new Error("Neulifi returned an unreadable response. Please refresh and try again.");
     return payload as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw new Error("The meal scanner timed out. Please try again in a moment.");

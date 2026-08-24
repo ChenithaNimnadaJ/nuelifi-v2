@@ -1136,3 +1136,5 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .history-row-media img { height: 58px; object-fit: cover; width: 58px; }
 .history-row-media small { background: var(--ink); border: 1px solid var(--border); border-radius: 999px; bottom: -4px; color: var(--surface); font-size: 9px; left: 28px; padding: 2px 5px; position: absolute; white-space: nowrap; }
 @media (max-width: 560px) { .history-detail-gallery { min-height: 220px; } .history-detail-gallery img { border-radius: 12px; } }
+
+.referral-payout-card{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:18px}.referral-payout-card h2{margin:7px 0 0;color:var(--text-strong);font:700 clamp(19px,3vw,25px)/1.08 Geist,Inter,sans-serif;letter-spacing:-.04em}.referral-payout-card p{max-width:620px;margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.55}.referral-payout-card button{flex:0 0 auto}@media (max-width:560px){.referral-payout-card{align-items:stretch;flex-direction:column}.referral-payout-card button{width:100%}}

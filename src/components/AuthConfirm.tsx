@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { getHealthySession, supabase } from "../lib/supabase";
 import { BrandMark } from "./BrandMark";
 
 const emailTypes = new Set(["signup", "magiclink", "recovery", "invite", "email_change", "email"]);
@@ -10,7 +10,8 @@ function safeReturnPath() {
 
 function callbackMessage() {
   const params = new URLSearchParams(window.location.search);
-  const raw = params.get("error_description") || params.get("error") || params.get("error_code");
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const raw = params.get("error_description") || params.get("error") || params.get("error_code") || hash.get("error_description") || hash.get("error") || hash.get("error_code");
   if (!raw) return "";
   return /expired|invalid/i.test(raw) ? "This sign-in link has expired or is no longer valid. Request a new one from Neulifi." : "We could not complete this sign-in link. Request a new one and try again.";
 }
@@ -26,22 +27,30 @@ export function AuthConfirm({ onAuthenticated, themeMode, onThemeChange }: { onA
       return;
     }
     verificationStarted.current = true;
+    const client = supabase;
+    if (!client) return;
     const params = new URLSearchParams(window.location.search);
-    const tokenHash = params.get("token_hash")?.trim() || "";
+    const tokenHash = params.get("token_hash")?.trim() || new URLSearchParams(window.location.hash.replace(/^#/, "")).get("token_hash")?.trim() || "";
     const code = params.get("code")?.trim() || "";
     const requestedType = params.get("type")?.trim() || "email";
     const type = emailTypes.has(requestedType) ? requestedType as "signup" | "magiclink" | "recovery" | "invite" | "email_change" | "email" : "email";
-    if (!tokenHash && !code) { setMessage("This sign-in link is incomplete. Request a new one from Neulifi."); setState("error"); return; }
     let active = true;
-    const verification = code ? supabase.auth.exchangeCodeForSession(code) : supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    void verification.then(({ data, error }) => {
+    const finish = () => {
       if (!active) return;
-      if (error || !data.session) { setMessage(error && /expired|invalid/i.test(error.message) ? "This sign-in link has expired or is no longer valid. Request a new one from Neulifi." : "We could not verify this sign-in link. Request a new one and try again."); setState("error"); return; }
       window.history.replaceState(null, "", "/auth/confirm");
       setState("success");
       setMessage(safeReturnPath() === "/welcome" ? "Your email is confirmed. Connecting your verified purchase…" : "Your email is confirmed. Opening your private Neulifi space…");
       window.setTimeout(() => { if (active) onAuthenticated(); }, 300);
-    }).catch(() => { if (active) { setMessage("We could not verify this sign-in link. Request a new one and try again."); setState("error"); } });
+    };
+    const verify = async () => {
+      const existingSession = await getHealthySession().catch(() => null);
+      if (existingSession) { finish(); return; }
+      if (!tokenHash && !code) throw new Error("incomplete");
+      const verification = code ? await client.auth.exchangeCodeForSession(code) : await client.auth.verifyOtp({ token_hash: tokenHash, type });
+      if (verification.error || !verification.data.session) throw verification.error || new Error("verification_failed");
+      finish();
+    };
+    void verify().catch((error) => { if (active) { setMessage(error instanceof Error && /expired|invalid/i.test(error.message) ? "This sign-in link has expired or is no longer valid. Request a new one from Neulifi." : error instanceof Error && error.message === "incomplete" ? "This sign-in link is incomplete. Request a new one from Neulifi." : "We could not verify this sign-in link. Request a new one and try again."); setState("error"); } });
     return () => { active = false; };
   }, [message, onAuthenticated]);
 
