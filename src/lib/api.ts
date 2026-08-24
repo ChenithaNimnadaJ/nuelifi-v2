@@ -14,13 +14,16 @@ export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; ac
 export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
 export interface StreakSnapshot { currentStreak: number; longestStreak: number; lastActivityDate: string | null; }
 export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; }
+export type PayoutMethodType = "crypto_transfer" | "paypal" | "other";
 export type PayoutRequestStatus = "pending" | "approved" | "paid" | "rejected" | "cancelled";
-export type PayoutNotificationStatus = "pending" | "sent" | "failed";
-export interface PayoutMethodOption { methodType: "crypto_transfer"; currency: string; network: string; displayName: string; memoRequired: boolean; }
-export interface PayoutMethod { id: string; methodType: "crypto_transfer"; currency: string; network: string; walletAddressLast4: string; hasMemoTag: boolean; createdAt: string; updatedAt: string; }
-export interface PayoutRequest { id: string; requestedAmount: number; currency: "USD"; status: PayoutRequestStatus; availableBalanceSnapshot: number; methodType: "crypto_transfer"; methodCurrency: string; network: string; walletAddressLast4: string; hasMemoTag: boolean; userMessage: string | null; createdAt: string; reviewedAt: string | null; paidAt: string | null; paymentReference: string | null; notificationStatus: PayoutNotificationStatus; }
+export interface PayoutMethodOption { methodType: PayoutMethodType; currency: string; network: string; displayName: string; memoRequired: boolean; countryCodes: string[]; }
+export interface PayoutMethod { id: string; countryCode: string; methodType: PayoutMethodType; currency: string; network: string; destinationPreview: string; destinationLast4: string | null; hasMemoTag: boolean; createdAt: string; updatedAt: string; }
+export interface PayoutRequest { id: string; requestedAmount: number; currency: "USD"; status: PayoutRequestStatus; availableBalanceSnapshot: number; countryCode: string; methodType: PayoutMethodType; methodCurrency: string; network: string; destinationPreview: string; destinationLast4: string | null; hasMemoTag: boolean; userMessage: string | null; createdAt: string; reviewedAt: string | null; paidAt: string | null; paymentReference: string | null; }
 export interface AffiliatePayouts { method: PayoutMethod | null; options: PayoutMethodOption[]; requests: PayoutRequest[]; }
-export interface SavePayoutMethodInput { methodType: "crypto_transfer"; currency: string; network: string; walletAddress: string; memoTag?: string; }
+export interface SavePayoutMethodInput { countryCode: string; methodType: PayoutMethodType; currency: string; network: string; walletAddress?: string; paypalEmail?: string; otherDetails?: string; memoTag?: string; }
+export interface AdminPayoutRequest extends PayoutRequest { affiliateId: string; affiliateName: string; affiliateEmail: string | null; payoutMethodId: string; requestNote: string; adminNotes: string | null; walletAddress: string; paypalEmail: string; otherDetails: string; memoTag: string; reviewerId: string | null; paidBy: string | null; }
+export interface AdminPayoutSummary { pendingCount: number; pendingAmount: number; paidCount: number; paidAmount: number; }
+export interface AdminPayoutsResponse { summary: AdminPayoutSummary; requests: AdminPayoutRequest[]; }
 
 const configuredApiUrl = String(import.meta.env.VITE_API_URL || "").trim();
 const API_URL = import.meta.env.MODE === "production" && /^(https?:)?\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredApiUrl) ? "" : configuredApiUrl.replace(/\/+$/, "");
@@ -44,7 +47,6 @@ async function request<T>(path: string, options?: RequestInit, allowRefresh = tr
   } finally { window.clearTimeout(timeout); }
 }
 
-
 export const neulifiApi = {
   authMe: () => request<{ id: string; email: string }>("/api/auth/me"),
   dashboard: (userId: string) => request<Dashboard>(`/api/users/${userId}/dashboard`),
@@ -62,7 +64,9 @@ export const neulifiApi = {
   payouts: () => request<AffiliatePayouts>("/api/user/payouts"),
   savePayoutMethod: (input: SavePayoutMethodInput) => request<PayoutMethod>("/api/user/payout-method", { method: "POST", body: JSON.stringify(input) }),
   removePayoutMethod: () => request<{ removed: boolean; pendingRequestsPreserved: boolean }>("/api/user/payout-method", { method: "DELETE" }),
-  requestPayout: (requestedAmount: number, requestNote = "") => request<PayoutRequest & { notificationMessage?: string }>("/api/user/payout-request", { method: "POST", body: JSON.stringify({ requestedAmount, requestNote }) }),
+  requestPayout: (requestedAmount: number, requestNote = "") => request<PayoutRequest>("/api/user/payout-request", { method: "POST", body: JSON.stringify({ requestedAmount, requestNote }) }),
+  adminPayouts: (status = "", search = "") => request<AdminPayoutsResponse>(`/api/admin/payout-requests?status=${encodeURIComponent(status)}&search=${encodeURIComponent(search)}`),
+  updateAdminPayout: (requestId: string, input: { status: Exclude<PayoutRequestStatus, "pending">; adminNotes?: string; userMessage?: string; paymentReference?: string; confirmManualPayment?: boolean }) => request<Pick<PayoutRequest, "id" | "status" | "reviewedAt" | "paidAt" | "paymentReference" | "userMessage">>(`/api/admin/payout-requests/${encodeURIComponent(requestId)}`, { method: "PATCH", body: JSON.stringify(input) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),
   subscription: (userId: string) => request(`/api/users/${userId}/subscription`),
   usage: async () => { const payload = await request<{ plan: PlanId; status: string; used: number; usage_limit: number; analysis_level: AnalysisLevel }>("/api/usage"); return { plan: payload.plan, status: payload.status, used: payload.used, usageLimit: payload.usage_limit, analysisLevel: payload.analysis_level } as UsageSnapshot; },

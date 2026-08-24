@@ -229,30 +229,153 @@ async function encryptPayoutSecret(env, value) { const key = await payoutCryptoK
 async function decryptPayoutSecret(env, value) { const encoded = String(value || ""); if (!encoded.startsWith("v1.")) throw new Error("Payout encryption is not configured."); const packed = bytesFromBase64Url(encoded.slice(3)); if (packed.byteLength <= 12) throw new Error("Payout encryption is not configured."); const key = await payoutCryptoKey(env); return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: packed.slice(0, 12) }, key, packed.slice(12))); }
 function payoutText(value, limit) { return String(value || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, limit); }
 function validatePayoutWallet(value) { const walletAddress = String(value || "").trim(); if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(walletAddress)) throw new Error("Enter a valid USDT TRC20 wallet address."); return walletAddress; }
+function validatePayoutEmail(value) { const email = payoutText(value, 320).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error("Enter a valid PayPal email address."); return email; }
+function validatePayoutOtherDetails(value) { const details = payoutText(value, 2000); if (details.length < 4) throw new Error("Enter the payout details support should review."); return details; }
 function validatePayoutMemo(value) { const memoTag = payoutText(value, 128); if (memoTag && !/^[A-Za-z0-9 .:_/@#-]+$/.test(memoTag)) throw new Error("Memo or tag contains unsupported characters."); return memoTag; }
 function payoutAmount(value) { const amount = Number(value); if (!Number.isFinite(amount) || amount < 5 || amount > 1000000) throw new Error("Enter a payout amount of at least $5.00."); return Math.round(amount * 1_000_000) / 1_000_000; }
 function payoutRequestPathId(pathname, prefix) { const match = pathname.match(new RegExp(`^${prefix}/([^/]+)(?:/|$)`)); return uuidPath(match?.[1] ? decodeURIComponent(match[1]) : ""); }
-function payoutMethodView(row) { if (!row || typeof row !== "object") return null; return { id: row.id, methodType: row.method_type ?? row.methodType, currency: row.currency, network: row.network, walletAddressLast4: row.wallet_address_last4 ?? row.walletAddressLast4, hasMemoTag: Boolean(row.memo_tag_ciphertext ?? row.hasMemoTag), createdAt: row.created_at ?? row.createdAt, updatedAt: row.updated_at ?? row.updatedAt }; }
-function payoutRequestView(row) { if (!row || typeof row !== "object") return null; return { id: row.id, requestedAmount: Number(row.requested_amount ?? row.requestedAmount ?? 0), currency: "USD", status: row.status, availableBalanceSnapshot: Number(row.available_balance_snapshot ?? row.availableBalanceSnapshot ?? 0), methodType: row.method_type ?? row.methodType, methodCurrency: row.method_currency ?? row.methodCurrency, network: row.network, walletAddressLast4: row.wallet_address_last4 ?? row.walletAddressLast4, hasMemoTag: Boolean(row.memo_tag_ciphertext ?? row.hasMemoTag), userMessage: typeof (row.user_message ?? row.userMessage) === "string" ? (row.user_message ?? row.userMessage) : null, createdAt: row.created_at ?? row.createdAt, reviewedAt: row.reviewed_at ?? row.reviewedAt ?? null, paidAt: row.paid_at ?? row.paidAt ?? null, paymentReference: row.payment_reference ?? row.paymentReference ?? null, notificationStatus: (row.notification_status ?? row.notificationStatus) === "sent" ? "sent" : (row.notification_status ?? row.notificationStatus) === "failed" ? "failed" : "pending" }; }
-function payoutOptionView(row) { if (!row || typeof row !== "object") return null; return { methodType: row.method_type, currency: row.currency, network: row.network, displayName: row.display_name || "Crypto transfer", memoRequired: Boolean(row.memo_required) }; }
-async function callPayoutRpc(env, rpc, body) { const response = await supabaseAdminFetch(env, `/rest/v1/rpc/${rpc}`, { method: "POST", body: JSON.stringify(body) }); if (!response.ok) { const payload = await response.json().catch(() => ({})); const upstream = String(payload?.message || payload?.hint || ""); const safe = /already pending|Add a payout method|minimum payout|available balance|Unsupported payout method|wallet address|Memo or tag|Payout method data|Affiliate account|Payout request was not found|already closed|Invalid payout status|status transition|payment reference/i.test(upstream) ? upstream.slice(0, 240) : "Could not complete that payout action."; throw new Error(safe); } return response.json(); }
+function payoutMethodView(row) {
+  if (!row || typeof row !== "object") return null;
+  const methodType = row.method_type ?? row.methodType;
+  const destinationLast4 = row.destination_last4 ?? row.destinationLast4 ?? row.wallet_address_last4 ?? row.walletAddressLast4 ?? null;
+  const destinationPreview = row.destination_preview ?? row.destinationPreview ?? (methodType === "crypto_transfer" && destinationLast4 ? `Wallet ending ••••${destinationLast4}` : methodType === "paypal" ? "PayPal account saved" : methodType === "other" ? "Manual review details saved" : "");
+  return {
+    id: row.id,
+    countryCode: row.country_code ?? row.countryCode ?? "XX",
+    methodType,
+    currency: row.currency,
+    network: row.network || "",
+    destinationPreview,
+    destinationLast4,
+    hasMemoTag: Boolean(row.memo_tag_ciphertext ?? row.hasMemoTag),
+    createdAt: row.created_at ?? row.createdAt,
+    updatedAt: row.updated_at ?? row.updatedAt,
+  };
+}
+function payoutRequestView(row) {
+  if (!row || typeof row !== "object") return null;
+  const methodType = row.method_type ?? row.methodType;
+  const destinationLast4 = row.destination_last4 ?? row.destinationLast4 ?? row.wallet_address_last4 ?? row.walletAddressLast4 ?? null;
+  const destinationPreview = row.destination_preview ?? row.destinationPreview ?? (methodType === "crypto_transfer" && destinationLast4 ? `Wallet ending ••••${destinationLast4}` : methodType === "paypal" ? "PayPal account saved" : methodType === "other" ? "Manual review details saved" : "");
+  return {
+    id: row.id,
+    requestedAmount: Number(row.requested_amount ?? row.requestedAmount ?? 0),
+    currency: "USD",
+    status: row.status,
+    availableBalanceSnapshot: Number(row.available_balance_snapshot ?? row.availableBalanceSnapshot ?? 0),
+    countryCode: row.country_code ?? row.countryCode ?? "XX",
+    methodType,
+    methodCurrency: row.method_currency ?? row.methodCurrency,
+    network: row.network || "",
+    destinationPreview,
+    destinationLast4,
+    hasMemoTag: Boolean(row.memo_tag_ciphertext ?? row.hasMemoTag),
+    userMessage: typeof (row.user_message ?? row.userMessage) === "string" ? (row.user_message ?? row.userMessage) : null,
+    createdAt: row.created_at ?? row.createdAt,
+    reviewedAt: row.reviewed_at ?? row.reviewedAt ?? null,
+    paidAt: row.paid_at ?? row.paidAt ?? null,
+    paymentReference: row.payment_reference ?? row.paymentReference ?? null,
+  };
+}
+function payoutOptionView(row, countryCodes = []) {
+  if (!row || typeof row !== "object") return null;
+  return { methodType: row.method_type, currency: row.currency, network: row.network || "", displayName: row.display_name || "Payout method", memoRequired: Boolean(row.memo_required), countryCodes };
+}
+function payoutOptionKey(row) { return [row?.method_type || row?.methodType || "", row?.currency || "", row?.network || ""].join("|"); }
+function maskPayoutEmail(value) { const email = String(value || "").trim(); const at = email.indexOf("@"); return at > 1 ? email.slice(0, 1) + "••••" + email.slice(at) : "PayPal account saved"; }
+async function callPayoutRpc(env, rpc, body) { const response = await supabaseAdminFetch(env, `/rest/v1/rpc/${rpc}`, { method: "POST", body: JSON.stringify(body) }); if (!response.ok) { const payload = await response.json().catch(() => ({})); const upstream = String(payload?.message || payload?.hint || ""); const safe = /already pending|Add a payout method|minimum payout|available balance|Unsupported payout method|not configured for this country|wallet address|PayPal email|payout details|Memo or tag|Payout method data|Affiliate account|Payout request was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(upstream) ? upstream.slice(0, 240) : "Could not complete that payout action."; throw new Error(safe); } return response.json(); }
 async function markPayoutNotification(env, requestId, status, errorMessage = null) { await callPayoutRpc(env, "mark_affiliate_payout_notification", { p_request_id: requestId, p_status: status, p_error: errorMessage }); }
-async function sendPayoutNotification(env, row) { const walletCiphertext = row.wallet_address_ciphertext ?? row.walletAddressCiphertext; const memoCiphertext = row.memo_tag_ciphertext ?? row.memoTagCiphertext; const affiliateId = row.affiliate_id ?? row.affiliateId; const requestedAmount = row.requested_amount ?? row.requestedAmount; const balanceSnapshot = row.available_balance_snapshot ?? row.availableBalanceSnapshot; const methodCurrency = row.method_currency ?? row.methodCurrency; const requestNote = row.request_note ?? row.requestNote; const createdAt = row.created_at ?? row.createdAt; const affiliateEmail = row.affiliate_email ?? row.affiliateEmail ?? ""; const walletAddress = await decryptPayoutSecret(env, walletCiphertext); const memoTag = memoCiphertext ? await decryptPayoutSecret(env, memoCiphertext) : ""; const from = String(env.PAYOUT_FROM_EMAIL || "support@neulifi.online").trim(); const to = String(env.PAYOUT_ADMIN_EMAIL || "support@neulifi.online").trim(); const subject = `Neulifi payout request ${row.id}`; const text = ["A new Neulifi affiliate payout request is pending review.", "", `Request ID: ${row.id}`, `Affiliate ID: ${affiliateId}`, affiliateEmail ? `Affiliate email: ${payoutText(affiliateEmail, 320)}` : "Affiliate email: unavailable", `Requested amount: $${Number(requestedAmount || 0).toFixed(6)} USD`, `Available balance snapshot: $${Number(balanceSnapshot || 0).toFixed(6)} USD`, `Payout method: ${methodCurrency} on ${row.network}`, `Wallet address: ${walletAddress}`, memoTag ? `Memo/tag: ${memoTag}` : "Memo/tag: none", requestNote ? `Affiliate note: ${payoutText(requestNote, 500)}` : "Affiliate note: none", `Created at: ${createdAt}`].join("\\n"); if (env.PAYOUT_EMAIL && typeof env.PAYOUT_EMAIL.send === "function") { await env.PAYOUT_EMAIL.send({ to, from, subject, text }); return { channel: "cloudflare" }; } const apiKey = String(env.RESEND_API_KEY || "").trim(); if (!apiKey) throw new Error("Payout notification email is not configured."); const response = await upstreamFetch("https://api.resend.com/emails", { method: "POST", headers: { accept: "application/json", authorization: `Bearer ${apiKey}`, "content-type": "application/json", "idempotency-key": `neulifi-payout-${row.id}` }, body: JSON.stringify({ from, to: [to], reply_to: to, subject, text }) }, 10000); if (!response.ok) throw new Error("Payout notification email could not be delivered."); return response.json().catch(() => ({})); }
+
 function uuidPath(value) { const candidate = String(value || "").trim(); return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidate) ? candidate : null; }
 function routeUserId(pathname, prefix) { const match = pathname.match(new RegExp(`^${prefix}/([^/]+)(?:/|$)`)); return uuidPath(match?.[1]); }
 async function requireRouteUser(request, env, pathname, prefix) { const verifiedUser = await verifyUser(request, env); const requestedUserId = routeUserId(pathname, prefix); if (!requestedUserId || requestedUserId !== verifiedUser.id) throw new Error("Not allowed"); return verifiedUser; }
 async function callUserRpc(env, rpc, body) { const response = await supabaseAdminFetch(env, `/rest/v1/rpc/${rpc}`, { method: "POST", body: JSON.stringify(body) }); if (!response.ok) throw new Error("Could not complete that account action."); return response.json(); }
 async function listUserRows(env, table, userId, select, extra = "") { const response = await supabaseAdminFetch(env, `/rest/v1/${table}?user_id=eq.${encodeURIComponent(userId)}&select=${encodeURIComponent(select)}${extra}`); if (!response.ok) throw new Error("Could not load your account data."); return response.json(); }
-async function listAffiliatePayouts(env, affiliateId) { const id = encodeURIComponent(affiliateId); const [optionsResponse, methodResponse, requestsResponse] = await Promise.all([
-  supabaseAdminFetch(env, "/rest/v1/affiliate_payout_method_options?active=eq.true&select=method_type,currency,network,display_name,memo_required&order=currency.asc,network.asc"),
-  supabaseAdminFetch(env, `/rest/v1/affiliate_payout_methods?affiliate_id=eq.${id}&is_active=eq.true&select=id,method_type,currency,network,wallet_address_last4,memo_tag_ciphertext,created_at,updated_at&order=updated_at.desc&limit=1`),
-  supabaseAdminFetch(env, `/rest/v1/affiliate_payout_requests?affiliate_id=eq.${id}&select=id,requested_amount,currency,status,available_balance_snapshot,method_type,method_currency,network,wallet_address_last4,memo_tag_ciphertext,user_message,created_at,reviewed_at,paid_at,payment_reference,notification_status&order=created_at.desc&limit=50`),
- ]); if (!optionsResponse.ok || !methodResponse.ok || !requestsResponse.ok) throw new Error("Could not load your payout settings."); const [options, methods, requests] = await Promise.all([optionsResponse.json(), methodResponse.json(), requestsResponse.json()]); return { method: payoutMethodView(Array.isArray(methods) ? methods[0] : null), options: (Array.isArray(options) ? options : []).map(payoutOptionView).filter(Boolean), requests: (Array.isArray(requests) ? requests : []).map(payoutRequestView).filter(Boolean) }; }
-function payoutValidationError(message) { return /already pending|Add a payout method|minimum payout|available balance|Unsupported payout method|wallet address|Memo or tag|Payout method data|Affiliate account was not found|already closed|Invalid payout status|status transition|payment reference|Choose the supported USDT TRC20 payout method|Choose an allowed payout status/i.test(String(message || "")); }
-function payoutConfigError(message) { return /Payout encryption is not configured|Payout notification email is not configured/i.test(String(message || "")); }
-async function adminPayoutRequestView(env, row) { const view = payoutRequestView(row); if (!view) return null; let walletAddress = ""; let memoTag = ""; try { walletAddress = await decryptPayoutSecret(env, row.wallet_address_ciphertext); if (row.memo_tag_ciphertext) memoTag = await decryptPayoutSecret(env, row.memo_tag_ciphertext); } catch { /* the admin view stays masked if encryption configuration is unavailable */ } return { ...view, affiliateId: row.affiliate_id, requestNote: row.request_note || "", walletAddress, memoTag, adminNotes: row.admin_notes || null }; }
+async function listAffiliatePayouts(env, affiliateId) {
+  const id = encodeURIComponent(affiliateId);
+  const [optionsResponse, countryResponse, methodResponse, requestsResponse] = await Promise.all([
+    supabaseAdminFetch(env, "/rest/v1/affiliate_payout_method_options?active=eq.true&select=method_type,currency,network,display_name,memo_required&order=currency.asc,network.asc"),
+    supabaseAdminFetch(env, "/rest/v1/affiliate_payout_country_methods?active=eq.true&select=country_code,method_type,currency,network&order=country_code.asc,method_type.asc,currency.asc,network.asc"),
+    supabaseAdminFetch(env, "/rest/v1/affiliate_payout_methods?affiliate_id=eq." + id + "&is_active=eq.true&select=id,country_code,method_type,currency,network,destination_preview,destination_last4,wallet_address_last4,memo_tag_ciphertext,created_at,updated_at&order=updated_at.desc&limit=1"),
+    supabaseAdminFetch(env, "/rest/v1/affiliate_payout_requests?affiliate_id=eq." + id + "&select=id,requested_amount,currency,status,available_balance_snapshot,country_code,method_type,method_currency,network,destination_preview,destination_last4,wallet_address_last4,memo_tag_ciphertext,user_message,created_at,reviewed_at,paid_at,payment_reference&order=created_at.desc&limit=50"),
+  ]);
+  if (!optionsResponse.ok || !countryResponse.ok || !methodResponse.ok || !requestsResponse.ok) throw new Error("Could not load your payout settings.");
+  const [options, countryRows, methods, requests] = await Promise.all([optionsResponse.json(), countryResponse.json(), methodResponse.json(), requestsResponse.json()]);
+  const countryCodes = new Map();
+  for (const row of Array.isArray(countryRows) ? countryRows : []) { const key = payoutOptionKey(row); const current = countryCodes.get(key) || []; if (row.country_code && !current.includes(row.country_code)) current.push(row.country_code); countryCodes.set(key, current); }
+  return {
+    method: payoutMethodView(Array.isArray(methods) ? methods[0] : null),
+    options: (Array.isArray(options) ? options : []).map((row) => payoutOptionView(row, countryCodes.get(payoutOptionKey(row)) || [])).filter(Boolean),
+    requests: (Array.isArray(requests) ? requests : []).map(payoutRequestView).filter(Boolean),
+  };
+}
+function payoutValidationError(message) { return /already pending|Add a payout method|minimum payout|available balance|Unsupported payout method|not configured for this country|wallet address|PayPal email|payout details|Memo or tag|Payout method data|Affiliate account was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(String(message || "")); }
+function payoutConfigError(message) { return /Payout encryption is not configured/i.test(String(message || "")); }
+async function adminPayoutRequestView(env, row) {
+  const view = payoutRequestView(row);
+  if (!view) return null;
+  let walletAddress = "";
+  let paypalEmail = "";
+  let otherDetails = "";
+  let memoTag = "";
+  try {
+    if (view.methodType === "crypto_transfer" && row.wallet_address_ciphertext) walletAddress = await decryptPayoutSecret(env, row.wallet_address_ciphertext);
+    if (view.methodType === "paypal" && row.paypal_email_ciphertext) paypalEmail = await decryptPayoutSecret(env, row.paypal_email_ciphertext);
+    if (view.methodType === "other" && row.other_details_ciphertext) otherDetails = await decryptPayoutSecret(env, row.other_details_ciphertext);
+    if (row.memo_tag_ciphertext) memoTag = await decryptPayoutSecret(env, row.memo_tag_ciphertext);
+  } catch { /* the admin view stays masked if encryption configuration is unavailable */ }
+  return {
+    ...view,
+    affiliateId: row.affiliate_id,
+    affiliateName: row.affiliate_name || "Affiliate",
+    affiliateEmail: row.affiliate_email || null,
+    payoutMethodId: row.payout_method_id,
+    requestNote: row.request_note || "",
+    adminNotes: row.admin_notes || null,
+    reviewerId: row.reviewer_id || null,
+    paidBy: row.paid_by || null,
+    walletAddress,
+    paypalEmail,
+    otherDetails,
+    memoTag,
+  };
+}
 async function requirePayoutAdmin(request, env) { const user = await verifyUser(request, env); const configuredId = uuidPath(env.PAYOUT_ADMIN_USER_ID || env.ADMIN_USER_ID); if (!configuredId || configuredId !== user.id) throw new Error("Not allowed"); return user; }
-async function handleAdminPayoutEndpoint(request, env) { const pathname = new URL(request.url).pathname; const adminRequestId = payoutRequestPathId(pathname, "/api/admin/payout-requests"); if (pathname !== "/api/admin/payout-requests" && !adminRequestId) return null; try { const reviewer = await requirePayoutAdmin(request, env); if (pathname === "/api/admin/payout-requests" && request.method === "GET") { const response = await supabaseAdminFetch(env, "/rest/v1/affiliate_payout_requests?select=id,affiliate_id,requested_amount,currency,status,available_balance_snapshot,method_type,method_currency,network,wallet_address_last4,wallet_address_ciphertext,memo_tag_ciphertext,request_note,admin_notes,user_message,reviewer_id,reviewed_at,paid_by,paid_at,payment_reference,notification_status,notification_error,notification_sent_at,created_at,updated_at&order=created_at.desc&limit=100"); if (!response.ok) throw new Error("Could not load payout requests."); const rows = await response.json(); return json({ requests: (Array.isArray(rows) ? await Promise.all(rows.map((row) => adminPayoutRequestView(env, row))) : []).filter(Boolean) }, 200, request, env); } if (adminRequestId && request.method === "PATCH") { const body = await request.json().catch(() => ({})); const status = payoutText(body.status, 32).toLowerCase(); if (!["approved", "paid", "rejected", "cancelled"].includes(status)) return json({ error: "Choose an allowed payout status." }, 400, request, env); const adminNotes = payoutText(body.adminNotes, 2000); const userMessage = payoutText(body.userMessage, 500); const paymentReference = payoutText(body.paymentReference, 200); const raw = await callPayoutRpc(env, "update_affiliate_payout_request_status", { p_request_id: adminRequestId, p_status: status, p_reviewer_id: reviewer.id, p_admin_notes: adminNotes || null, p_user_message: userMessage || null, p_payment_reference: paymentReference || null }); const result = Array.isArray(raw) ? raw[0] : raw; return json(result || {}, 200, request, env); } return json({ error: "Method not allowed" }, 405, request, env); } catch (error) { const message = error instanceof Error ? error.message : "Could not complete that admin action."; const status = /Authentication|required|session/i.test(message) ? 401 : /Not allowed/i.test(message) ? 403 : payoutConfigError(message) ? 503 : payoutValidationError(message) ? 400 : 500; return json({ error: message }, status, request, env); } }
+async function handleAdminPayoutEndpoint(request, env) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+  const adminRequestId = payoutRequestPathId(pathname, "/api/admin/payout-requests");
+  if (pathname !== "/api/admin/payout-requests" && !adminRequestId) return null;
+  try {
+    const reviewer = await requirePayoutAdmin(request, env);
+    if (pathname === "/api/admin/payout-requests" && request.method === "GET") {
+      const status = payoutText(url.searchParams.get("status"), 32).toLowerCase();
+      const search = payoutText(url.searchParams.get("search"), 120);
+      const raw = await callPayoutRpc(env, "list_affiliate_payout_requests_admin", { p_status: status, p_search: search });
+      const payload = Array.isArray(raw) ? raw[0] : raw;
+      const rows = Array.isArray(payload?.requests) ? payload.requests : [];
+      return json({ summary: payload?.summary || { pendingCount: 0, pendingAmount: 0, paidCount: 0, paidAmount: 0 }, requests: (await Promise.all(rows.map((row) => adminPayoutRequestView(env, row)))).filter(Boolean) }, 200, request, env);
+    }
+    if (adminRequestId && request.method === "PATCH") {
+      const body = await request.json().catch(() => ({}));
+      const status = payoutText(body.status, 32).toLowerCase();
+      if (!["approved", "paid", "rejected", "cancelled"].includes(status)) return json({ error: "Choose an allowed payout status." }, 400, request, env);
+      const adminNotes = payoutText(body.adminNotes, 2000);
+      const userMessage = payoutText(body.userMessage, 500);
+      const paymentReference = payoutText(body.paymentReference, 200);
+      if (status === "rejected" && !adminNotes) return json({ error: "A rejection reason is required." }, 400, request, env);
+      if (status === "paid" && (!paymentReference || body.confirmManualPayment !== true)) return json({ error: !paymentReference ? "A payment reference is required before marking a request paid." : "Confirm the manual payment before marking as paid." }, 400, request, env);
+      const raw = await callPayoutRpc(env, "update_affiliate_payout_request_status", { p_request_id: adminRequestId, p_status: status, p_reviewer_id: reviewer.id, p_admin_notes: adminNotes || null, p_user_message: userMessage || null, p_payment_reference: paymentReference || null });
+      const result = Array.isArray(raw) ? raw[0] : raw;
+      return json(result || {}, 200, request, env);
+    }
+    return json({ error: "Method not allowed" }, 405, request, env);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not complete that admin action.";
+    const status = /Authentication|required|session/i.test(message) ? 401 : /Not allowed/i.test(message) ? 403 : payoutConfigError(message) ? 503 : payoutValidationError(message) ? 400 : 500;
+    return json({ error: message }, status, request, env);
+  }
+}
 function actionView(row) { const completed = row?.status === "completed" || Boolean(row?.completed); return { id: row?.id, userId: row?.user_id, mealId: row?.meal_id || null, title: row?.title || "", description: row?.description || "", completed, status: completed ? "completed" : row?.status === "missed" ? "missed" : "upcoming", dueAt: row?.due_at || null, createdAt: row?.created_at, completedAt: row?.completed_at || null }; }
 async function handleUserEndpoint(request, env) {
   const pathname = new URL(request.url).pathname;
@@ -287,12 +410,12 @@ async function handleUserEndpoint(request, env) {
       const user = await verifyUser(request, env);
       const body = await request.json().catch(() => ({}));
       if (typeof body?.completed !== "boolean") return json({ error: "Task completion must be true or false." }, 400, request, env);
-      const ownershipResponse = await supabaseAdminFetch(env, `/rest/v1/actions?id=eq.${encodeURIComponent(actionId)}&user_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`);
+      const ownershipResponse = await supabaseAdminFetch(env, "/rest/v1/actions?id=eq." + encodeURIComponent(actionId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=id&limit=1");
       if (!ownershipResponse.ok) throw new Error("Could not verify that task.");
       const ownedRows = await ownershipResponse.json();
       if (!Array.isArray(ownedRows) || !ownedRows[0]) return json({ error: "Task not found." }, 404, request, env);
       await callUserRpc(env, "complete_action", { p_action_id: actionId, p_completed: body.completed });
-      const response = await supabaseAdminFetch(env, `/rest/v1/actions?id=eq.${encodeURIComponent(actionId)}&user_id=eq.${encodeURIComponent(user.id)}&select=id,user_id,meal_id,title,description,completed,status,due_at,created_at,completed_at&limit=1`);
+      const response = await supabaseAdminFetch(env, "/rest/v1/actions?id=eq." + encodeURIComponent(actionId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=id,user_id,meal_id,title,description,completed,status,due_at,created_at,completed_at&limit=1");
       if (!response.ok) throw new Error("Could not reload that task.");
       const rows = await response.json();
       if (!Array.isArray(rows) || !rows[0]) return json({ error: "Task not found." }, 404, request, env);
@@ -317,17 +440,41 @@ async function handleUserEndpoint(request, env) {
     if (pathname === "/api/user/payout-method" && request.method === "POST") {
       const user = await verifyUser(request, env);
       const body = await request.json().catch(() => ({}));
+      const countryCode = payoutText(body.countryCode, 8).toUpperCase();
       const methodType = payoutText(body.methodType, 32).toLowerCase();
-      const currency = payoutText(body.currency, 12).toUpperCase();
-      const network = payoutText(body.network, 24).toUpperCase();
-      if (methodType !== "crypto_transfer" || currency !== "USDT" || network !== "TRC20") throw new Error("Choose the supported USDT TRC20 payout method.");
-      const walletAddress = validatePayoutWallet(body.walletAddress);
-      const memoTag = validatePayoutMemo(body.memoTag);
-      const walletCiphertext = await encryptPayoutSecret(env, walletAddress);
-      const memoCiphertext = memoTag ? await encryptPayoutSecret(env, memoTag) : null;
-      const raw = await callPayoutRpc(env, "save_affiliate_payout_method", { p_affiliate_id: user.id, p_method_type: methodType, p_currency: currency, p_network: network, p_wallet_address_ciphertext: walletCiphertext, p_wallet_address_last4: walletAddress.slice(-4).toUpperCase(), p_memo_tag_ciphertext: memoCiphertext });
+      let currency = payoutText(body.currency, 12).toUpperCase();
+      let network = payoutText(body.network, 24).toUpperCase();
+      if (!/^[A-Z]{2}$/.test(countryCode)) throw new Error("Enter a valid two-letter country code.");
+      if (!["crypto_transfer", "paypal", "other"].includes(methodType)) throw new Error("Choose a supported payout method.");
+      if (methodType === "crypto_transfer") { currency = "USDT"; network = "TRC20"; } else { currency = "USD"; network = ""; }
+      let walletCiphertext = null;
+      let paypalCiphertext = null;
+      let otherCiphertext = null;
+      let destinationLast4 = null;
+      let destinationPreview = "";
+      if (methodType === "crypto_transfer") {
+        const walletAddress = validatePayoutWallet(body.walletAddress);
+        const memoTag = validatePayoutMemo(body.memoTag);
+        walletCiphertext = await encryptPayoutSecret(env, walletAddress);
+        destinationLast4 = walletAddress.slice(-4).toUpperCase();
+        destinationPreview = "Wallet ending ••••" + destinationLast4;
+        const memoCiphertext = memoTag ? await encryptPayoutSecret(env, memoTag) : null;
+        const raw = await callPayoutRpc(env, "save_affiliate_payout_method", { p_affiliate_id: user.id, p_country_code: countryCode, p_method_type: methodType, p_currency: currency, p_network: network, p_wallet_address_ciphertext: walletCiphertext, p_destination_last4: destinationLast4, p_paypal_email_ciphertext: null, p_other_details_ciphertext: null, p_destination_preview: destinationPreview, p_memo_tag_ciphertext: memoCiphertext });
+        const result = Array.isArray(raw) ? raw[0] : raw;
+        return json(payoutMethodView({ id: result?.id, country_code: result?.countryCode, method_type: result?.methodType, currency: result?.currency, network: result?.network, destination_preview: result?.destinationPreview, destination_last4: result?.destinationLast4, hasMemoTag: result?.hasMemoTag, created_at: result?.createdAt, updated_at: result?.updatedAt }), 200, request, env);
+      }
+      if (methodType === "paypal") {
+        const paypalEmail = validatePayoutEmail(body.paypalEmail);
+        paypalCiphertext = await encryptPayoutSecret(env, paypalEmail);
+        destinationPreview = maskPayoutEmail(paypalEmail);
+      } else {
+        const otherDetails = validatePayoutOtherDetails(body.otherDetails);
+        otherCiphertext = await encryptPayoutSecret(env, otherDetails);
+        destinationPreview = "Manual review details saved";
+      }
+      const raw = await callPayoutRpc(env, "save_affiliate_payout_method", { p_affiliate_id: user.id, p_country_code: countryCode, p_method_type: methodType, p_currency: currency, p_network: network, p_wallet_address_ciphertext: walletCiphertext, p_destination_last4: destinationLast4, p_paypal_email_ciphertext: paypalCiphertext, p_other_details_ciphertext: otherCiphertext, p_destination_preview: destinationPreview, p_memo_tag_ciphertext: null });
       const result = Array.isArray(raw) ? raw[0] : raw;
-      return json(payoutMethodView({ id: result?.id, method_type: result?.methodType, currency: result?.currency, network: result?.network, wallet_address_last4: result?.walletAddressLast4, memo_tag_ciphertext: result?.hasMemoTag ? "stored" : null, created_at: result?.createdAt, updated_at: result?.updatedAt }), 200, request, env);
+      return json(payoutMethodView({ id: result?.id, country_code: result?.countryCode, method_type: result?.methodType, currency: result?.currency, network: result?.network, destination_preview: result?.destinationPreview, destination_last4: result?.destinationLast4, hasMemoTag: result?.hasMemoTag, created_at: result?.createdAt, updated_at: result?.updatedAt }), 200, request, env);
     }
     if (pathname === "/api/user/payout-method" && request.method === "DELETE") {
       const user = await verifyUser(request, env);
@@ -342,9 +489,7 @@ async function handleUserEndpoint(request, env) {
       const raw = await callPayoutRpc(env, "create_affiliate_payout_request", { p_affiliate_id: user.id, p_requested_amount: amount, p_request_note: requestNote });
       const row = Array.isArray(raw) ? raw[0] : raw;
       if (!row?.id) throw new Error("Could not create the payout request.");
-      let notificationMessage = "Your payout request was saved and support was notified for review.";
-      try { await sendPayoutNotification(env, { ...row, affiliateEmail: user.email || "" }); await markPayoutNotification(env, row.id, "sent"); row.notification_status = "sent"; } catch (notificationError) { const reason = notificationError instanceof Error ? notificationError.message : "Notification failed"; await markPayoutNotification(env, row.id, "failed", reason).catch(() => undefined); row.notification_status = "failed"; notificationMessage = "Your payout request was saved for review, but the support notification is pending configuration."; console.error("affiliate_payout_notification_failed", JSON.stringify({ requestId: String(row.id), reason: "delivery_failed" })); }
-      return json({ ...payoutRequestView(row), notificationMessage }, 201, request, env);
+      return json(payoutRequestView(row), 201, request, env);
     }
     return json({ error: "Method not allowed" }, 405, request, env);
   } catch (error) {
@@ -360,7 +505,7 @@ const PUBLIC_SEO = { "/": { title: "Neulifi — AI Meal & Nutrition Scanner", de
 function assetContentType(pathname, fallback) { if (pathname === "/" || pathname === "/checkout" || pathname.endsWith(".html")) return "text/html; charset=utf-8"; if (pathname.endsWith(".js")) return "application/javascript; charset=utf-8"; if (pathname.endsWith(".css")) return "text/css; charset=utf-8"; if (pathname.endsWith(".txt")) return "text/plain; charset=utf-8"; if (pathname.endsWith(".xml")) return "application/xml; charset=utf-8"; if (pathname.endsWith(".webmanifest") || pathname.endsWith(".json")) return "application/manifest+json; charset=utf-8"; return fallback || "application/octet-stream"; }
 function seoEscape(value) { return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function renderPublicSeo(html, definition) { const title = seoEscape(definition.title); const description = seoEscape(definition.description); const canonical = seoEscape(definition.canonical); return html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`).replace(/<meta name="description"[^>]*>/i, `<meta name="description" content="${description}">`).replace(/<meta name="robots"[^>]*>/i, `<meta name="robots" content="index, follow">`).replace(/<link rel="canonical"[^>]*>/i, `<link rel="canonical" href="${canonical}">`).replace(/<meta property="og:url"[^>]*>/i, `<meta property="og:url" content="${canonical}">`).replace(/<meta property="og:title"[^>]*>/i, `<meta property="og:title" content="${title}">`).replace(/<meta property="og:description"[^>]*>/i, `<meta property="og:description" content="${description}">`).replace(/<meta name="twitter:title"[^>]*>/i, `<meta name="twitter:title" content="${title}">`).replace(/<meta name="twitter:description"[^>]*>/i, `<meta name="twitter:description" content="${description}">`); }
-async function serveAsset(request, env) { const requestedUrl = new URL(request.url); let response = await env.ASSETS.fetch(request); let servedPath = requestedUrl.pathname; if (response.status === 404 && (request.method === "GET" || request.method === "HEAD") && (request.headers.get("accept") || "").includes("text/html")) { const fallbackUrl = new URL("/", request.url); response = await env.ASSETS.fetch(new Request(fallbackUrl, request)); servedPath = fallbackUrl.pathname; } const headers = new Headers(response.headers); headers.set("content-type", assetContentType(servedPath, headers.get("content-type"))); headers.set("cache-control", /\.(?:js|css|png|jpg|jpeg|webp|svg|woff2?)$/i.test(servedPath) ? "public, max-age=31536000, immutable" : "no-cache"); securityHeaders(headers, request); const definition = PUBLIC_SEO[requestedUrl.pathname]; if (request.method === "GET" && definition && response.ok && headers.get("content-type")?.includes("text/html")) { const body = renderPublicSeo(await response.text(), definition); headers.delete("content-length"); headers.delete("etag"); return new Response(body, { status: response.status, statusText: response.statusText, headers }); } if (/^\/(?:app|login|signup|checkout|auth\/confirm)(?:\/|$)/.test(requestedUrl.pathname)) headers.set("x-robots-tag", "noindex, nofollow"); return new Response(response.body, { status: response.status, statusText: response.statusText, headers }); }
+async function serveAsset(request, env) { const requestedUrl = new URL(request.url); let response = await env.ASSETS.fetch(request); let servedPath = requestedUrl.pathname; if (response.status === 404 && (request.method === "GET" || request.method === "HEAD") && (request.headers.get("accept") || "").includes("text/html")) { const fallbackUrl = new URL("/", request.url); response = await env.ASSETS.fetch(new Request(fallbackUrl, request)); servedPath = fallbackUrl.pathname; } const headers = new Headers(response.headers); headers.set("content-type", assetContentType(servedPath, headers.get("content-type"))); headers.set("cache-control", /\.(?:js|css|png|jpg|jpeg|webp|svg|woff2?)$/i.test(servedPath) ? "public, max-age=31536000, immutable" : "no-cache"); securityHeaders(headers, request); const definition = PUBLIC_SEO[requestedUrl.pathname]; if (request.method === "GET" && definition && response.ok && headers.get("content-type")?.includes("text/html")) { const body = renderPublicSeo(await response.text(), definition); headers.delete("content-length"); headers.delete("etag"); return new Response(body, { status: response.status, statusText: response.statusText, headers }); } if (/^\/(?:app|login|signup|checkout|auth\/confirm|admin)(?:\/|$)/.test(requestedUrl.pathname)) headers.set("x-robots-tag", "noindex, nofollow"); return new Response(response.body, { status: response.status, statusText: response.statusText, headers }); }
 function redirectLegacyPublicHost(request) { const incoming = new URL(request.url); const isObsoleteWorkersHost = incoming.hostname === "nuelifi.chenithanimnadaj.workers.dev"; if (!isObsoleteWorkersHost) return null; if (request.method !== "GET" && request.method !== "HEAD") return new Response("Not Found", { status: 404 }); const target = new URL("https://neulifi.online/"); const authKeys = ["code", "token_hash", "error", "error_code", "error_description", "type", "access_token", "refresh_token", "expires_in", "token_type"]; const hasAuthCallback = authKeys.some((key) => incoming.searchParams.has(key)); if (hasAuthCallback && ["/", "/app", "/welcome", "/login", "/signup"].includes(incoming.pathname)) target.pathname = incoming.pathname; for (const key of authKeys) { const value = incoming.searchParams.get(key); if (value) target.searchParams.set(key, value); } const referral = incoming.searchParams.get("ref"); if (!hasAuthCallback && referral && /^[A-Z0-9_-]{4,32}$/i.test(referral)) target.searchParams.set("ref", referral.toUpperCase()); return Response.redirect(target.toString(), 308); }
 
 export default { async fetch(request, env) { const url = new URL(request.url); const legacyRedirect = redirectLegacyPublicHost(request); if (legacyRedirect) return legacyRedirect; if (request.method === "OPTIONS") return json({}, 204, request, env); if (url.pathname === "/health") return json({ status: "ok", service: "neulifi-cloudflare" }, 200, request, env); if (url.pathname.startsWith("/api/user/")) { const userResponse = await handleUserEndpoint(request, env); if (userResponse) return userResponse; } if (url.pathname.startsWith("/api/admin/payout-requests")) { const adminResponse = await handleAdminPayoutEndpoint(request, env); if (adminResponse) return adminResponse; } if (url.pathname === "/api/paddle/config" && request.method === "GET") { try { return handlePaddleConfig(request, env); } catch (error) { return json({ error: error instanceof Error ? error.message : "Paddle is not configured." }, 503, request, env); } } if (url.pathname === "/api/paddle/webhook" && request.method === "POST") return handlePaddleWebhook(request, env); if (url.pathname === "/api/paddle/customer-portal" && request.method === "POST") { try { const verifiedUser = await verifyUser(request, env); return json(await createPaddleCustomerPortalSession(env, verifiedUser.id), 200, request, env); } catch (error) { const message = error instanceof Error ? error.message : "Could not open billing management."; const status = /Authentication|required|session/i.test(message) ? 401 : /No active billing account/i.test(message) ? 404 : /not configured|could not open billing management/i.test(message) ? 503 : 500; return json({ error: message }, status, request, env); } } if (url.pathname === "/api/paddle/claim-pending-purchase" && request.method === "POST") {
