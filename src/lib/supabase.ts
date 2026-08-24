@@ -12,7 +12,7 @@ export const supabase = url && publishableKey ? createClient(url, publishableKey
 // Password-reset links must be usable when the original tab is closed or the link is opened in a new tab.
 // Keep ordinary sign-in PKCE behavior unchanged, but request recovery links without a browser-bound verifier.
 export const recoverySupabase = url && publishableKey ? createClient(url, publishableKey, {
-  auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false, flowType: "implicit" },
+  auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false, flowType: "implicit", storageKey: "neulifi-recovery-auth" },
 }) : null;
 
 function tokenTimes(accessToken: string) {

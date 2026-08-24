@@ -28,6 +28,7 @@ const authErrorsModule = await import(`data:text/javascript;base64,${Buffer.from
 test("ordinary auth remains PKCE while password-reset requests use the recovery client", () => {
   assert.match(supabase, /flowType: "pkce"/);
   assert.match(supabase, /recoverySupabase/);
+  assert.match(supabase, /storageKey: "neulifi-recovery-auth"/);
   assert.match(supabase, /flowType: "implicit"/);
   assert.match(authScreen, /recoverySupabase\.auth\.resetPasswordForEmail/);
   assert.doesNotMatch(authScreen, /supabase\.auth\.resetPasswordForEmail/);

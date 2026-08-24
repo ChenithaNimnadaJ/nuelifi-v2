@@ -17,7 +17,7 @@ const ADSENSE_SLOTS: Record<AdSlot, string> = {
 function loadAdsenseScript(): Promise<void> {
   const win = window as AdsenseWindow;
   if (win.__neulifiAdsenseLoader) return win.__neulifiAdsenseLoader;
-  const existing = document.querySelector<HTMLScriptElement>("script[data-neulifi-adsense]");
+  const existing = document.querySelector<HTMLScriptElement>('script[src*="adsbygoogle.js"]');
   if (existing) {
     win.__neulifiAdsenseLoader = Promise.resolve();
     return win.__neulifiAdsenseLoader;
@@ -26,7 +26,6 @@ function loadAdsenseScript(): Promise<void> {
     const script = document.createElement("script");
     script.async = true;
     script.crossOrigin = "anonymous";
-    script.dataset.neulifiAdsense = "true";
     script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Google AdSense could not be loaded."));
