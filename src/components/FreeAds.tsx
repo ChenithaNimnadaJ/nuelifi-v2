@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-type AdSlot = "responsive";
+type AdSlot = "responsive" | "analysis" | "insights";
 type AdsenseWindow = Window & {
   adsbygoogle?: unknown[];
   __neulifiAdsenseLoader?: Promise<void>;
@@ -8,7 +8,11 @@ type AdsenseWindow = Window & {
 
 const ADS_CONSENT_KEY = "neulifi-ads-consent";
 const ADSENSE_CLIENT = "ca-pub-7297802357104625";
-const ADSENSE_SLOT = "3398954371";
+const ADSENSE_SLOTS: Record<AdSlot, string> = {
+  responsive: "3398954371",
+  analysis: "5852787976",
+  insights: "3745499387",
+};
 
 function loadAdsenseScript(): Promise<void> {
   const win = window as AdsenseWindow;
@@ -38,6 +42,7 @@ export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
   const [consent, setConsent] = useState(() => typeof window !== "undefined" && window.localStorage.getItem(ADS_CONSENT_KEY) === "granted");
   const [error, setError] = useState(false);
   const slotId = `neulifi-adsense-${slot}`;
+  const adSlot = ADSENSE_SLOTS[slot];
 
   useEffect(() => {
     const target = document.getElementById(slotId);
@@ -47,7 +52,7 @@ export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
     ad.className = "adsbygoogle";
     ad.style.display = "block";
     ad.dataset.adClient = ADSENSE_CLIENT;
-    ad.dataset.adSlot = ADSENSE_SLOT;
+    ad.dataset.adSlot = adSlot;
     ad.dataset.adFormat = "auto";
     ad.dataset.fullWidthResponsive = "true";
     target.replaceChildren(ad);
@@ -65,7 +70,7 @@ export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
       active = false;
       target.replaceChildren();
     };
-  }, [consent, slotId]);
+  }, [adSlot, consent, slotId]);
 
   return <aside className={`free-ad-placement free-ad-placement-${slot}`} aria-label="Sponsored content">
     <div className="free-ad-heading"><span>SUPPORTED BY ADS</span><small>Free plan</small></div>
