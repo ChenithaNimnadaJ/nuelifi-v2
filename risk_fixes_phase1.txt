@@ -1,0 +1,208 @@
+Neulifi Phase 1 risk register
+
+This file records fixes deferred because their estimated breakage risk is >= 50%, or because the issue requires controlled reproduction outside this low-risk repair pass.
+
+ISSUE:
+Fixed mobile bottom navigation can obscure the first Insights card and CTA in the initial viewport.
+LOCATION:
+src/index.css: .bottom-nav, .screen, .analytics-tier-grid; shared app layout.
+OBSERVED BEHAVIOR:
+At 390px, the fixed bottom navigation occupies the lower viewport while the first locked Insights card extends into the same region. The page becomes usable after scrolling, but the initial card/CTA presentation is partially covered.
+EXPECTED BEHAVIOR:
+Fixed navigation should not obscure visible content or primary actions on any mobile screen.
+WHY IT SHOULD BE FIXED:
+It weakens first-view comprehension and can hide a paid-feature CTA on mobile.
+PROPOSED FIX:
+Rework mobile content insets and/or the analytics layout so content reserves the fixed navigation area without creating excessive whitespace or affecting every screen.
+ESTIMATED BREAKAGE RISK:
+55%.
+WHY RISK IS >= 50%:
+The navigation is a shared fixed layout component. A global inset or layout change can alter every mobile screen, safe-area behavior, scroll height, sticky/fixed interactions, and the first viewport composition.
+AFFECTED SYSTEMS:
+Shared mobile navigation, all authenticated screens, analytics layout, safe-area handling, responsive CSS.
+RECOMMENDED FUTURE APPROACH:
+Capture each mobile screen at 390px, 430px, and real iOS/Android safe-area sizes; define a shared bottom-navigation content inset; verify top, middle, and maximum scroll positions before release.
+
+---
+
+ISSUE:
+Desktop saved-meal detail highlights Actions while the page is Meal history.
+LOCATION:
+Shared navigation active-state mapping in src/App.tsx and saved-detail screen state.
+OBSERVED BEHAVIOR:
+The captured 1440px saved-detail screenshot showed Actions highlighted in the sidebar while the header and inline back link said Meal history.
+EXPECTED BEHAVIOR:
+The sidebar should identify the current parent area consistently, or intentionally show no active item for a detail view.
+WHY IT SHOULD BE FIXED:
+It causes navigation disorientation and reduces confidence in the current location.
+PROPOSED FIX:
+Change shared active-state mapping for the history detail route and verify all five authenticated sections.
+ESTIMATED BREAKAGE RISK:
+55%.
+WHY RISK IS >= 50%:
+The source currently derives active state directly from a shared Screen union, while the screenshot and a separate desktop snapshot differ. The root cause is not fully isolated; changing the shared mapping could affect Actions, Insights, history list, and mobile navigation.
+AFFECTED SYSTEMS:
+Shared sidebar/bottom navigation, history list/detail, Actions, Insights, responsive active state.
+RECOMMENDED FUTURE APPROACH:
+Reproduce the mismatch in a fresh browser context at desktop and mobile, assert the active item from DOM state, then introduce a dedicated navigation-parent mapping with focused tests.
+
+---
+
+ISSUE:
+Cross-section navigation can retain the previous scroll position.
+LOCATION:
+App screen navigation and desktop main/mobile document scrolling.
+OBSERVED BEHAVIOR:
+After scrolling saved detail to the bottom, navigating to Insights preserved a deep scroll position, leaving the Insights title and summary above the viewport.
+EXPECTED BEHAVIOR:
+Navigating to a new top-level screen should begin at its top unless the user explicitly used browser history to restore position.
+WHY IT SHOULD BE FIXED:
+Users can land midway through a new section and miss its context or primary controls.
+PROPOSED FIX:
+Reset the correct scroll container on top-level screen navigation while preserving intentional browser back behavior.
+ESTIMATED BREAKAGE RISK:
+60%.
+WHY RISK IS >= 50%:
+Desktop scrolls the main element while mobile scrolls the document. A naïve window.scrollTo change will not cover desktop; a shared effect may interfere with history detail, modals, focus, and browser back restoration.
+AFFECTED SYSTEMS:
+Global navigation, desktop main scroll container, mobile document scroll, history behavior, accessibility focus.
+RECOMMENDED FUTURE APPROACH:
+Add a route/screen navigation abstraction with per-container reset rules and verify all screen transitions plus browser back/forward.
+
+---
+
+ISSUE:
+Supabase reports multiple GoTrueClient instances in the same browser context.
+LOCATION:
+Supabase/auth initialization paths.
+OBSERVED BEHAVIOR:
+The console repeatedly warns that multiple GoTrueClient instances share the same storage key. No visible auth failure was reproduced during this pass.
+EXPECTED BEHAVIOR:
+A browser context should use one shared auth client or a deliberately isolated arrangement.
+WHY IT SHOULD BE FIXED:
+The warning indicates possible undefined concurrent session behavior.
+PROPOSED FIX:
+Trace and consolidate Supabase client initialization.
+ESTIMATED BREAKAGE RISK:
+65%.
+WHY RISK IS >= 50%:
+Authentication/session initialization is shared infrastructure. Consolidation can affect sign-in, magic links, password recovery, OAuth callbacks, refresh tokens, and logout behavior.
+AFFECTED SYSTEMS:
+Supabase auth, session persistence, sign-in/sign-up, recovery, protected data loading.
+RECOMMENDED FUTURE APPROACH:
+Map every client creation path, add auth regression tests, and change only after sign-in, recovery, refresh, and logout are covered in a clean browser context.
+
+---
+
+ISSUE:
+ServiceWorker intercepts a Cloudflare challenge-platform script and reports an error.
+LOCATION:
+PWA ServiceWorker/deployment and Cloudflare challenge handling.
+OBSERVED BEHAVIOR:
+One mobile console error reported that /sw.js intercepted a Cloudflare challenge-platform request and encountered an unexpected error. The audited app remained usable.
+EXPECTED BEHAVIOR:
+ServiceWorker caching should not interfere with Cloudflare challenge scripts.
+WHY IT SHOULD BE FIXED:
+It may affect users who encounter challenge-protected requests or verification flows.
+PROPOSED FIX:
+Adjust ServiceWorker routing/caching or exclude challenge-platform requests.
+ESTIMATED BREAKAGE RISK:
+70%.
+WHY RISK IS >= 50%:
+This involves deployment/security behavior and could affect offline caching, authentication, challenge verification, and production routing.
+AFFECTED SYSTEMS:
+PWA, ServiceWorker, Cloudflare challenge platform, authentication and deployment.
+RECOMMENDED FUTURE APPROACH:
+Reproduce under controlled challenge conditions, inspect registration/cache behavior, and deploy only with a rollback plan and browser matrix.
+
+---
+
+ISSUE:
+Date/time formatting may not consistently use the saved profile timezone.
+LOCATION:
+src/App.tsx and src/components/ProductScreens.tsx client-side date formatting.
+OBSERVED BEHAVIOR:
+The profile stored Asia/Colombo while several UI timestamps were formatted with browser-local Intl defaults. A controlled date-boundary mismatch was not fully reproduced.
+EXPECTED BEHAVIOR:
+Business timestamps and daily-task dates should consistently follow the documented timezone policy.
+WHY IT SHOULD BE FIXED:
+Timezone drift can affect task due dates, streaks, history labels, and daily allowance interpretation.
+PROPOSED FIX:
+Define one timezone-aware formatting policy and pass the intended timezone to all business-date formatters.
+ESTIMATED BREAKAGE RISK:
+55%.
+WHY RISK IS >= 50%:
+Changing date handling can alter displayed dates, streak logic, daily quota boundaries, due times, and existing saved records across all users.
+AFFECTED SYSTEMS:
+Meal history, task due dates, streaks, usage limits, profile timezone, analytics labels.
+RECOMMENDED FUTURE APPROACH:
+Create deterministic timezone boundary fixtures and compare UTC, browser-local, and profile-local expectations before changing shared formatting.
+
+---
+
+ISSUE:
+Auth email-provider rate limiting prevents creation of a second fresh audit account.
+LOCATION:
+Supabase email provider/auth configuration.
+OBSERVED BEHAVIOR:
+Sign-up returned the provider message that too many emails had been requested recently. No bypass or repeated retry was attempted.
+EXPECTED BEHAVIOR:
+Fresh account creation should be available within provider limits with a clear retry window.
+WHY IT SHOULD BE FIXED:
+It limits independent-account testing and can affect legitimate sign-up availability.
+PROPOSED FIX:
+Review email provider limits, templates, anti-abuse settings, and rate-limit configuration.
+ESTIMATED BREAKAGE RISK:
+80%.
+WHY RISK IS >= 50%:
+Provider/auth configuration changes can affect deliverability, abuse protection, signup capacity, and existing login/recovery flows; the defect is not in the meal-recommendation implementation.
+AFFECTED SYSTEMS:
+Supabase Auth, email delivery, sign-up, verification, password recovery.
+RECOMMENDED FUTURE APPROACH:
+Review provider metrics and limits separately; do not change production auth configuration as part of the recommendation repair pass.
+
+---
+
+ISSUE:
+Four locked analytics cards create a dense mobile paywall sequence.
+LOCATION:
+src/App.tsx Insights and analytics card CSS.
+OBSERVED BEHAVIOR:
+Mobile Insights shows one Pro and three Premium locked cards in succession before Recent meals.
+EXPECTED BEHAVIOR:
+Free users should see the locations of paid features without the page feeling dominated by repeated upsell blocks.
+WHY IT SHOULD BE FIXED:
+The current structure may feel intrusive and suppresses the user’s available data.
+PROPOSED FIX:
+Group, collapse, or reprioritize locked cards while preserving required feature visibility.
+ESTIMATED BREAKAGE RISK:
+55%.
+WHY RISK IS >= 50%:
+This is a product-level information-architecture and conversion change affecting responsive layouts, plan messaging, and the intentional Free-user gating model.
+AFFECTED SYSTEMS:
+Insights, Pro/Premium gating, upgrade messaging, mobile and desktop analytics layouts.
+RECOMMENDED FUTURE APPROACH:
+Use usability/conversion evidence first; prototype alternatives separately and test plan labels, CTA priority, and scroll depth before implementation.
+
+---
+
+ISSUE:
+Potential cross-timezone and independent-account recommendation coverage gaps.
+LOCATION:
+Test infrastructure and live provider constraints.
+OBSERVED BEHAVIOR:
+The account was at 2/2 analyses and a second signup was rate-limited, so no new time-simulated, no-action, restriction-conflict, or independent-user scans could be run.
+EXPECTED BEHAVIOR:
+A controlled QA environment should support isolated fixtures without production quota bypasses.
+WHY IT SHOULD BE FIXED:
+These gaps limit confidence in edge-case recommendation behavior.
+PROPOSED FIX:
+Create a non-production fixture/staging strategy for quota, clock, user context, and provider-failure cases.
+ESTIMATED BREAKAGE RISK:
+75% if attempted in production.
+WHY RISK IS >= 50%:
+Changing production usage, auth, or database test data would risk user data, quota integrity, and payment/auth isolation.
+AFFECTED SYSTEMS:
+Production database, auth, usage accounting, AI analysis, QA data management.
+RECOMMENDED FUTURE APPROACH:
+Build an isolated staging/fixture harness in a separate authorized phase; do not alter production to complete these tests.
