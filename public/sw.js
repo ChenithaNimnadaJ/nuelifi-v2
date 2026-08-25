@@ -1,4 +1,4 @@
-const CACHE_NAME = "neulifi-static-v3";
+const CACHE_NAME = "neulifi-static-v4";
 const APP_SHELL = "/index.html";
 const STATIC_DESTINATIONS = new Set(["script", "style", "image", "font", "manifest"]);
 
@@ -19,6 +19,8 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // Cloudflare challenge assets must stay on the network; caching/intercepting them can surface a false backend outage.
+  if (url.pathname === "/cdn-cgi" || url.pathname.startsWith("/cdn-cgi/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith((async () => {

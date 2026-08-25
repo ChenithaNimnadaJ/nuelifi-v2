@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -27,6 +27,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/components/FreeAds.tsx"),
   read("public/sitemap.xml"),
   read("src/lib/api.ts"),
+  read("public/sw.js"),
 ]);
 
 const typescript = await import("typescript");
@@ -124,6 +125,18 @@ test("Paddle webhook status mapping is defined and app-compatible", () => {
   assert.match(worker, /\["canceled", "cancelled", "expired"\]/);
   assert.match(worker, /\["past_due", "paused", "payment_failed"\]/);
   assert.match(worker, /function paddleAppStatus\(status\) \{ return appSubscriptionStatus/);
+});
+
+test("the Worker implements the declared read-only auth identity endpoint", () => {
+  assert.ok(worker.includes('url.pathname === "/api/auth/me"'));
+  assert.ok(worker.includes("verifiedUser.email"));
+  assert.ok(api.includes("authMe: () => request"));
+});
+
+test("service worker does not intercept Cloudflare challenge assets", () => {
+  assert.match(sw, /const CACHE_NAME = "neulifi-static-v4"/);
+  assert.ok(sw.includes('url.pathname === "/cdn-cgi"'));
+  assert.ok(sw.includes('url.pathname.startsWith("/cdn-cgi/")'));
 });
 
 test("payout API transport errors stay feature-neutral and selected crypto options are submitted", () => {
