@@ -44,8 +44,9 @@ async function request<T>(path: string, options?: RequestInit, allowRefresh = tr
     if (malformed || payload === null) throw new Error("Neulifi returned an unreadable response. Please refresh and try again.");
     return payload as T;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw new Error("The meal scanner timed out. Please try again in a moment.");
-    if (error instanceof TypeError) throw new Error("The meal scanner could not reach the Neulifi backend. Please check your connection and try again.");
+    const isMealAnalysisRequest = path === "/api/analyze";
+    if (error instanceof DOMException && error.name === "AbortError") throw new Error(isMealAnalysisRequest ? "The meal scanner timed out. Please try again in a moment." : "Neulifi request timed out. Please try again in a moment.");
+    if (error instanceof TypeError) throw new Error(isMealAnalysisRequest ? "The meal scanner could not reach the Neulifi backend. Please check your connection and try again." : "Neulifi could not reach the backend. Please check your connection and try again.");
     throw error;
   } finally { window.clearTimeout(timeout); }
 }

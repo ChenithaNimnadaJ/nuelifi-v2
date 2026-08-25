@@ -50,7 +50,6 @@ export function ReferralDashboard({ summary, loading, error, onEnsureCode }: { s
   const [payoutError, setPayoutError] = useState("");
   const [methodOpen, setMethodOpen] = useState(false);
   const [countryCode, setCountryCode] = useState("XX");
-  const methodType: PayoutMethodType = "crypto_transfer";
   const [selectedOptionKey, setSelectedOptionKey] = useState("USDT|TRC20");
   const [walletAddress, setWalletAddress] = useState("");
   const [memoTag, setMemoTag] = useState("");
@@ -75,7 +74,7 @@ export function ReferralDashboard({ summary, loading, error, onEnsureCode }: { s
     if (methodSaving) return;
     const selectedCountry = normalizedCountry;
     if (!/^[A-Z]{2}$/.test(selectedCountry)) { setPayoutError("Enter a valid two-letter country code."); return; }
-    const option = payouts.options.find((item) => item.methodType === "crypto_transfer" && item.currency === "USDT" && item.network === "TRC20") || fallbackPayoutOption;
+    const option = activeOption;
     if (!optionSupportsCountry(option, selectedCountry)) { setPayoutError("Crypto payouts are not configured for this country yet."); return; }
     const trimmedWallet = walletAddress.trim();
     if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(trimmedWallet)) { setPayoutError("Enter a valid USDT TRC20 wallet address."); return; }

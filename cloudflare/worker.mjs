@@ -241,7 +241,7 @@ function payoutText(value, limit) { return String(value || "").replace(/[\r\n\t]
 function validatePayoutWallet(value) { const walletAddress = String(value || "").trim(); if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(walletAddress)) throw new Error("Enter a valid USDT TRC20 wallet address."); return walletAddress; }
 function validatePayoutMemo(value) { const memoTag = payoutText(value, 128); if (memoTag && !/^[A-Za-z0-9 .:_/@#-]+$/.test(memoTag)) throw new Error("Memo or tag contains unsupported characters."); return memoTag; }
 function payoutAmount(value) { const amount = Number(value); if (!Number.isFinite(amount) || amount < 5 || amount > 1000000) throw new Error("Enter a payout amount of at least $5.00."); return Math.round(amount * 1_000_000) / 1_000_000; }
-function payoutRequestPathId(pathname, prefix) { const match = pathname.match(new RegExp(`^${prefix}/([^/]+)(?:/|$)`)); return uuidPath(match?.[1] ? decodeURIComponent(match[1]) : ""); }
+function payoutRequestPathId(pathname, prefix) { const match = pathname.match(new RegExp(`^${prefix}/([^/]+?)/?$`)); if (!match?.[1]) return null; try { return uuidPath(decodeURIComponent(match[1])); } catch { return null; } }
 function payoutMethodView(row) {
   if (!row || typeof row !== "object") return null;
   const methodType = row.method_type ?? row.methodType;
@@ -315,7 +315,7 @@ async function listAffiliatePayouts(env, affiliateId) {
     requests: (Array.isArray(requests) ? requests : []).map(payoutRequestView).filter(Boolean),
   };
 }
-function payoutValidationError(message) { return /already pending|Add a crypto payout method|minimum payout|available balance|Unsupported cryptocurrency|Unsupported payout method|not configured for this country|wallet address|Memo or tag|Payout method data|Affiliate account was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(String(message || "")); }
+function payoutValidationError(message) { return /already pending|Add a crypto payout method|minimum payout|available balance|Only crypto transfer payouts are supported|Unsupported cryptocurrency|Unsupported payout method|not configured for this country|wallet address|Memo or tag|Payout method data|Affiliate account was not found|already closed|Invalid payout status|status transition|payment reference|manual payment|allowed payout status|valid two-letter country/i.test(String(message || "")); }
 function payoutConfigError(message) { return /Payout encryption is not configured/i.test(String(message || "")); }
 async function adminPayoutRequestView(env, row) {
   const view = payoutRequestView(row);
@@ -361,10 +361,15 @@ async function requirePayoutAdmin(request, env) { const user = await verifyUser(
 async function handleAdminPayoutEndpoint(request, env) {
   const url = new URL(request.url);
   const pathname = url.pathname;
-  const adminRequestId = payoutRequestPathId(pathname, "/api/admin/payout-requests");
-  if (pathname !== "/api/admin/payout-requests" && !adminRequestId) return null;
+  const adminCollectionPath = "/api/admin/payout-requests";
+  const isAdminRequestPath = pathname.startsWith(`${adminCollectionPath}/`);
+  const adminRequestId = payoutRequestPathId(pathname, adminCollectionPath);
+  if (pathname !== adminCollectionPath && !isAdminRequestPath) return null;
   try {
     const reviewer = await requirePayoutAdmin(request, env);
+    if (isAdminRequestPath && !adminRequestId) return json({ error: "That payout request identifier is not valid." }, 400, request, env);
+    if (pathname === adminCollectionPath && request.method !== "GET") return json({ error: "Method not allowed" }, 405, request, env);
+    if (adminRequestId && request.method !== "PATCH") return json({ error: "Method not allowed" }, 405, request, env);
     if (pathname === "/api/admin/payout-requests" && request.method === "GET") {
       const status = payoutText(url.searchParams.get("status"), 32).toLowerCase();
       const search = payoutText(url.searchParams.get("search"), 120);

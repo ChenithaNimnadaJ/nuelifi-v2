@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -26,6 +26,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("index.html"),
   read("src/components/FreeAds.tsx"),
   read("public/sitemap.xml"),
+  read("src/lib/api.ts"),
 ]);
 
 const typescript = await import("typescript");
@@ -123,6 +124,16 @@ test("Paddle webhook status mapping is defined and app-compatible", () => {
   assert.match(worker, /\["canceled", "cancelled", "expired"\]/);
   assert.match(worker, /\["past_due", "paused", "payment_failed"\]/);
   assert.match(worker, /function paddleAppStatus\(status\) \{ return appSubscriptionStatus/);
+});
+
+test("payout API transport errors stay feature-neutral and selected crypto options are submitted", () => {
+  assert.ok(api.includes('const isMealAnalysisRequest = path === "/api/analyze";'));
+  assert.match(api, /Neulifi request timed out/);
+  assert.match(api, /Neulifi could not reach the backend/);
+  assert.match(productScreens, /const option = activeOption;/);
+  assert.doesNotMatch(productScreens, /item\.currency === "USDT" && item\.network === "TRC20"/);
+  assert.match(worker, /Only crypto transfer payouts are supported/);
+  assert.match(worker, /That payout request identifier is not valid/);
 });
 
 test("payout copy and active surfaces remain crypto-only", () => {
