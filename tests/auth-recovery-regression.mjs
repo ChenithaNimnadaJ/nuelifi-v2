@@ -105,6 +105,7 @@ test("Paddle unavailable states do not expose internal configuration names", () 
 
 test("Paddle checkout receives a runtime public token from the Worker", () => {
   assert.match(worker, /async function paddleClientToken/);
+  assert.match(worker, /env\.PADDLE_CLIENT_TOKEN/);
   assert.match(worker, /\/client-tokens\?status=active&per_page=200/);
   assert.match(worker, /clientToken/);
   assert.match(paddle, /clientToken: string/);
