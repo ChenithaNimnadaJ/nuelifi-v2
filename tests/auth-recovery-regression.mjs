@@ -118,6 +118,13 @@ test("Paddle checkout receives a runtime public token from the Worker", () => {
   assert.match(paddleCheckout, /getPaddle\(config\)/);
 });
 
+test("Paddle webhook status mapping is defined and app-compatible", () => {
+  assert.match(worker, /function appSubscriptionStatus\(status\)/);
+  assert.match(worker, /\["canceled", "cancelled", "expired"\]/);
+  assert.match(worker, /\["past_due", "paused", "payment_failed"\]/);
+  assert.match(worker, /function paddleAppStatus\(status\) \{ return appSubscriptionStatus/);
+});
+
 test("payout copy and active surfaces remain crypto-only", () => {
   assert.match(productScreens, /Where should we send your payout\?/);
   assert.match(productScreens, /Payout request saved for Neulifi review/);
