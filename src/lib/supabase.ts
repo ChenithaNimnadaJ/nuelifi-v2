@@ -1,9 +1,9 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 
-const env = import.meta.env as Record<string, string | undefined>;
 // These are intentionally public Supabase browser values. Keep service-role and AI keys server-side.
-const url = String(env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
-const publishableKey = String(env.VITE_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "").trim();
+// Keep the property access static so Vite replaces the production values in the browser bundle.
+const url = String(import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+const publishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "").trim();
 
 export const supabase = url && publishableKey ? createClient(url, publishableKey, {
   auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false, flowType: "pkce" },

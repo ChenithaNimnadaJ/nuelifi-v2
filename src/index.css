@@ -1215,3 +1215,21 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .history-task-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .history-task-copy strong { font-size: 13px; font-weight: 500; }
 .history-task-copy small { color: var(--muted); font-size: 10px; }
+
+
+/* Global meal story: a neutral macro-balanced bowl that works across cultures and cuisines. */
+.public-site .public-bowl-stage { height: min(31vw, 340px); margin: 53px auto 0; max-height: 340px; max-width: 340px; min-height: 230px; min-width: 230px; position: relative; width: min(31vw, 340px); }
+.public-site .public-bowl-stage::before { background: radial-gradient(circle at 50% 43%, color-mix(in srgb, var(--surface-raised) 82%, white) 0 35%, color-mix(in srgb, var(--brand-soft) 82%, var(--surface-raised)) 36% 39%, color-mix(in srgb, var(--brand-strong) 52%, var(--surface-raised)) 40% 43%, transparent 44%), radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--brand-strong) 42%, var(--surface-raised)) 0 63%, color-mix(in srgb, var(--brand-strong) 62%, var(--surface-raised)) 64% 66%, transparent 67%); border: 1px solid color-mix(in srgb, var(--brand-strong) 26%, transparent); border-radius: 50%; box-shadow: 0 22px 35px color-mix(in srgb, #000 24%, transparent), inset 0 0 0 8px color-mix(in srgb, var(--surface) 12%, transparent); content: ""; inset: 0; position: absolute; }
+.public-site .public-bowl-segment { align-items: center; border: 1px solid color-mix(in srgb, #fff 22%, transparent); border-radius: 50%; box-shadow: 0 10px 18px color-mix(in srgb, #000 20%, transparent); display: flex; font-family: 'Inter', system-ui, sans-serif; font-size: clamp(9px, 1.05vw, 13px); font-weight: 700; justify-content: center; line-height: 1.12; padding: 0 10px; position: absolute; text-align: center; z-index: 1; }
+.public-site .public-bowl-grains { background: #e4d7b8; color: #273b30; height: 39%; left: 28%; top: 14%; width: 45%; }
+.public-site .public-bowl-proteins { background: #c79b75; color: #fff8ed; height: 31%; left: 8%; top: 42%; width: 42%; }
+.public-site .public-bowl-fiber { background: #80a77b; color: #f4fff0; height: 31%; right: 8%; top: 42%; width: 42%; }
+.public-site .public-bowl-fats { background: #d3b45f; color: #3f341e; height: 28%; left: 34%; top: 63%; width: 32%; }
+.public-site .public-bowl-stage { animation: public-plate-breathe 7s ease-in-out infinite; transform-origin: center; }
+.public-site .public-bowl-segment { animation: public-food-float 5.5s ease-in-out infinite; transform-origin: center; }
+.public-site .public-bowl-proteins { animation-delay: -.8s; }
+.public-site .public-bowl-fiber { animation-delay: -2.1s; }
+.public-site .public-bowl-fats { animation-delay: -3.4s; }
+@media (max-width: 900px) { .public-site .public-bowl-stage { height: min(46vw, 320px); width: min(46vw, 320px); } }
+@media (max-width: 620px) { .public-site .public-bowl-stage { margin-top: 43px; } }
+@media (prefers-reduced-motion: reduce) { .public-site .public-bowl-stage, .public-site .public-bowl-segment { animation: none !important; } }
