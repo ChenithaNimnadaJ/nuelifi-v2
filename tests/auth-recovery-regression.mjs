@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -23,6 +23,8 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("public/manifest-v2.webmanifest"),
   read("public/neulifi-logo-v2.svg"),
   read("index.html"),
+  read("src/components/FreeAds.tsx"),
+  read("public/sitemap.xml"),
 ]);
 
 const typescript = await import("typescript");
@@ -158,6 +160,19 @@ test("asset MIME mappings protect install metadata and the transparent logo", ()
   assert.match(logo, /<svg[\s\S]*fill="#05b866"/);
   assert.match(indexHtml, /manifest-v2\.webmanifest/);
   assert.match(indexHtml, /neulifi-logo-v2\.svg/);
+});
+
+test("free-plan ad fallback stays neutral while preserving the real AdSense slot", () => {
+  assert.match(freeAds, /script\[src\*="adsbygoogle\.js"\]/);
+  assert.match(freeAds, /Sponsored content helps keep the Free plan available\./);
+  assert.doesNotMatch(freeAds, /Ads are temporarily unavailable\./);
+  assert.match(freeAds, /dataset\.adClient/);
+  assert.match(freeAds, /dataset\.adSlot/);
+});
+
+test("public sitemap contains only public pages and excludes admin paths", () => {
+  assert.match(sitemap, /https:\/\/neulifi\.online\//);
+  assert.doesNotMatch(sitemap, /adminneu|\/admin(?:[^a-z]|$)/i);
 });
 
 test("notifications remain optional, permission-safe, and deterministic", () => {

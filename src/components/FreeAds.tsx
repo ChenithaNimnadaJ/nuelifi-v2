@@ -75,7 +75,7 @@ export function FreeAds({ slot = "responsive" }: { slot?: AdSlot }) {
     <div className="free-ad-heading"><span>SUPPORTED BY ADS</span><small>Free plan</small></div>
     {consent ? <div className="free-ad-slot free-ad-responsive">
       <div id={slotId} aria-live="polite" />
-      {error && <small className="free-ad-error">Ads are temporarily unavailable.</small>}
+      {error && <small className="free-ad-fallback">Sponsored content helps keep the Free plan available.</small>}
     </div> : <div className="free-ad-consent"><p>Optional ads help keep the Free plan available.</p><button className="text-button" type="button" onClick={() => { window.localStorage.setItem(ADS_CONSENT_KEY, "granted"); setConsent(true); }}>Allow sponsored content</button></div>}
   </aside>;
 }
