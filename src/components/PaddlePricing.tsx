@@ -1,21 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { getHealthySession } from "../lib/supabase";
-import { getPaddle, paddleTiers, readFormattedTotal, type PaddleBillingInterval, type PaddleRuntimeConfig, type Tier } from "../lib/paddle";
+import { fetchPaddleRuntimeConfig, getPaddle, paddleTiers, readFormattedTotal, type PaddleBillingInterval, type PaddleRuntimeConfig, type Tier } from "../lib/paddle";
 
 type PaddlePricingProps = { onAuth: (mode: "signin" | "signup", returnPath?: "/app" | "/welcome") => void };
 type PriceState = Record<string, string>;
 
 function publicOrigin() { return import.meta.env.MODE === "production" ? "https://neulifi.online" : window.location.origin; }
 
-function runtimeConfigUrl() {
-  const configured = String(import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
-  const safeBase = import.meta.env.MODE === "production" && /^(https?:)?\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configured) ? "" : configured;
-  const apiBase = safeBase || (import.meta.env.MODE === "production" ? "https://neulifi.online" : "");
-  return `${apiBase}/api/paddle/config`;
-}
-
 async function loadPrices(config: PaddleRuntimeConfig): Promise<{ prices: PriceState; failures: number }> {
-  const paddle = await getPaddle();
+  const paddle = await getPaddle(config);
   const results = await Promise.allSettled(paddleTiers.flatMap((tier) => (Object.entries(tier.priceId) as [PaddleBillingInterval, string][]).filter(([, priceId]) => priceId).map(async ([interval, priceId]) => {
     const preview = await paddle.PricePreview({ items: [{ priceId, quantity: 1 }], ...(config.countryCode ? { address: { countryCode: config.countryCode } } : {}) });
     return [`${tier.planId}-${interval}`, readFormattedTotal(preview)] as const;
@@ -32,6 +25,7 @@ async function loadPrices(config: PaddleRuntimeConfig): Promise<{ prices: PriceS
 export function PaddlePricing({ onAuth }: PaddlePricingProps) {
   const interval: PaddleBillingInterval = "year";
   const [prices, setPrices] = useState<PriceState>({});
+  const [runtimeConfig, setRuntimeConfig] = useState<PaddleRuntimeConfig | null>(null);
   const [countryCode, setCountryCode] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
@@ -43,12 +37,10 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       setLoading(true);
       setError("");
       try {
-        const response = await fetch(runtimeConfigUrl(), { headers: { accept: "application/json" } });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "Paddle pricing is not configured yet.");
-        const config: PaddleRuntimeConfig = typeof payload.countryCode === "string" && /^[A-Z]{2}$/.test(payload.countryCode) ? { countryCode: payload.countryCode } : {};
+        const config = await fetchPaddleRuntimeConfig();
         const { prices: nextPrices, failures } = await loadPrices(config);
         if (active) {
+          setRuntimeConfig(config);
           setCountryCode(config.countryCode);
           setPrices(nextPrices);
           if (failures) setError(failures === paddleTiers.filter((tier) => tier.planId !== "free" && tier.priceId.year).length ? "Annual prices could not be loaded. Please refresh and try again." : "Some annual prices could not be loaded. Those plans will remain unavailable until pricing is confirmed.");
@@ -67,12 +59,13 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
   const checkout = async (tier: Tier) => {
     if (tier.planId === "free") { onAuth("signup"); return; }
     if (!tier.priceId.year) { setError(`${tier.name} is not configured for annual billing yet.`); return; }
+    if (!runtimeConfig) { setError("Paddle checkout is still loading. Please try again in a moment."); return; }
     setCheckoutPlan(tier.planId);
     setError("");
     window.localStorage.setItem("neulifi-checkout-intent", JSON.stringify({ plan: tier.planId, billing_interval: "year", startedAt: Date.now() }));
     try {
       const session = await getHealthySession().catch(() => null);
-      const paddle = await getPaddle();
+      const paddle = await getPaddle(runtimeConfig);
       paddle.Checkout.open({
         items: [{ priceId: tier.priceId.year, quantity: 1 }],
         customer: session?.user?.email ? { email: session.user.email } : undefined,

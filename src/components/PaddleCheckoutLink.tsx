@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getPaddle } from "../lib/paddle";
+import { fetchPaddleRuntimeConfig, getPaddle } from "../lib/paddle";
 
 function productionSuccessUrl() {
   return import.meta.env.MODE === "production" ? "https://neulifi.online/welcome" : new URL("/welcome", window.location.origin).toString();
@@ -18,7 +18,7 @@ export function PaddleCheckoutLink() {
     let active = true;
     document.title = "Secure checkout — Neulifi";
     document.documentElement.querySelector('meta[name="robots"]')?.setAttribute("content", "noindex, nofollow");
-    void getPaddle().then((paddle) => {
+    void fetchPaddleRuntimeConfig().then((config) => getPaddle(config)).then((paddle) => {
       if (!active) return;
       paddle.Checkout.open({
         transactionId,

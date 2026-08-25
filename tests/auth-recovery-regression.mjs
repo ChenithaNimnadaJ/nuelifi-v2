@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -15,6 +15,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("cloudflare/worker.mjs"),
   read("src/lib/paddle.ts"),
   read("src/components/PaddlePricing.tsx"),
+  read("src/components/PaddleCheckoutLink.tsx"),
   read("src/App.tsx"),
   read("src/components/MealFlow.tsx"),
   read("public/robots.txt"),
@@ -100,6 +101,20 @@ test("Paddle unavailable states do not expose internal configuration names", () 
   assert.doesNotMatch(paddle, /Set VITE_PADDLE_ENVIRONMENT|Set VITE_PADDLE_CLIENT_TOKEN/);
   assert.match(paddle, /Paid plan checkout is temporarily unavailable/);
   assert.match(paddlePricing, /price === "Unavailable" \? "button-soft"/);
+});
+
+test("Paddle checkout receives a runtime public token from the Worker", () => {
+  assert.match(worker, /async function paddleClientToken/);
+  assert.match(worker, /\/client-tokens\?status=active&per_page=200/);
+  assert.match(worker, /clientToken/);
+  assert.match(paddle, /clientToken: string/);
+  assert.match(paddle, /getPaddle\(runtimeConfig\?: PaddleRuntimeConfig\)/);
+  assert.match(paddle, /fetchPaddleRuntimeConfig/);
+  assert.match(paddlePricing, /fetchPaddleRuntimeConfig/);
+  assert.match(paddlePricing, /getPaddle\(config\)/);
+  assert.match(paddlePricing, /getPaddle\(runtimeConfig\)/);
+  assert.match(paddleCheckout, /fetchPaddleRuntimeConfig/);
+  assert.match(paddleCheckout, /getPaddle\(config\)/);
 });
 
 test("payout copy and active surfaces remain crypto-only", () => {

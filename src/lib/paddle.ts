@@ -42,6 +42,8 @@ export const paddleTiers: Tier[] = [
 ];
 
 export interface PaddleRuntimeConfig {
+  environment: Environments;
+  clientToken: string;
   countryCode?: string;
 }
 
@@ -65,9 +67,9 @@ let paddlePromise: Promise<Paddle> | null = null;
 
 function publicOrigin() { return import.meta.env.MODE === "production" ? "https://neulifi.online" : window.location.origin; }
 
-export async function getPaddle(): Promise<Paddle> {
-  const environment = requiredEnvironment();
-  const token = requiredClientToken(environment);
+export async function getPaddle(runtimeConfig?: PaddleRuntimeConfig): Promise<Paddle> {
+  const environment = runtimeConfig?.environment || requiredEnvironment();
+  const token = runtimeConfig?.clientToken || requiredClientToken(environment);
   if (!paddlePromise) {
     paddlePromise = initializePaddle({
       environment,
@@ -90,8 +92,13 @@ export async function fetchPaddleRuntimeConfig(): Promise<PaddleRuntimeConfig> {
   const response = await fetch("/api/paddle/config", { headers: { accept: "application/json" } });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || "Paddle pricing is not configured yet.");
+  const environment = payload.environment === "production" || payload.environment === "sandbox" ? payload.environment : null;
+  const clientToken = typeof payload.clientToken === "string" ? payload.clientToken.trim() : "";
+  if (!environment || !/^(test|live)_[A-Za-z0-9]{27}$/.test(clientToken)) throw new Error("Paddle client-side checkout is not configured yet.");
+  const expectedPrefix = environment === "sandbox" ? "test_" : "live_";
+  if (!clientToken.startsWith(expectedPrefix)) throw new Error("Paddle client-side checkout is not configured yet.");
   const countryCode = typeof payload.countryCode === "string" && /^[A-Z]{2}$/.test(payload.countryCode) ? payload.countryCode : undefined;
-  return countryCode ? { countryCode } : {};
+  return { environment, clientToken, ...(countryCode ? { countryCode } : {}) };
 }
 
 export function readFormattedTotal(response: PricePreviewResponse): string {
