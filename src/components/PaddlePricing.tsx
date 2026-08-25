@@ -87,7 +87,6 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       <h1>More room for the rhythm you are building.</h1>
       <p>Choose the level that fits today. Paid plans are billed from the first cycle—there are no free trials—and you can manage your plan from your account.</p>
       <div className="paddle-billing-note" aria-label="Billing frequency"><strong>Billed annually</strong><small>Annual-only plans</small></div>
-      <small className="paddle-location-note">{countryLabel}. Final totals, taxes, and currency are shown at checkout.</small>
     </section>
     {error && <div className="data-note data-error paddle-status" role="alert">{error}</div>}
     <section className="plan-grid plan-grid-premium paddle-plan-grid" aria-label="Neulifi plans">
