@@ -97,7 +97,7 @@ export function AuthConfirm({ onAuthenticated, themeMode, onThemeChange, passwor
       }
       clearCallbackUrl();
       setState("success");
-      setMessage(safeReturnPath() === "/welcome" ? "Your email is confirmed. Connecting your verified purchase…" : "Your email is confirmed. Opening your private Neulifi space…");
+      setMessage(safeReturnPath() === "/welcome" ? "Your email is confirmed. Please log in to continue to onboarding and verify your Premium purchase." : "Your email is confirmed. Please log in to continue to your private Neulifi space.");
       onAuthenticated();
     };
 

@@ -45,6 +45,8 @@ test("ordinary auth remains PKCE while password-reset requests use the recovery 
 });
 
 test("recovery callback establishes a session for each supported payload shape", () => {
+  assert.match(authConfirm, /Please log in to continue to onboarding and verify your Premium purchase/);
+  assert.match(authConfirm, /Please log in to continue to your private Neulifi space/);
   assert.match(authConfirm, /client\.auth\.setSession\(\{ access_token: accessToken, refresh_token: refreshToken \}\)/);
   assert.match(authConfirm, /client\.auth\.exchangeCodeForSession\(code\)/);
   assert.match(authConfirm, /client\.auth\.verifyOtp\(\{ token_hash: tokenHash, type \}\)/);
