@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchPaddleRuntimeConfig, getPaddle } from "../lib/paddle";
+import { fetchPaddleRuntimeConfig, friendlyPaddleError, getPaddle } from "../lib/paddle";
 
 function productionSuccessUrl() {
   return import.meta.env.MODE === "production" ? "https://neulifi.online/welcome" : new URL("/welcome", window.location.origin).toString();
@@ -25,7 +25,7 @@ export function PaddleCheckoutLink() {
         settings: { displayMode: "overlay", variant: "one-page", theme: "light", locale: "en", successUrl: productionSuccessUrl() },
       });
     }).catch((value) => {
-      if (active) setError(value instanceof Error ? value.message : "Secure checkout could not be opened.");
+      if (active) setError(friendlyPaddleError(value, "Secure checkout could not be opened. Return to plans and try again."));
     });
     return () => { active = false; };
   }, []);

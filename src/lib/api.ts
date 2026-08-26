@@ -72,7 +72,7 @@ export const neulifiApi = {
   adminPayouts: (status = "", search = "") => request<AdminPayoutsResponse>(`/api/admin/payout-requests?status=${encodeURIComponent(status)}&search=${encodeURIComponent(search)}`),
   updateAdminPayout: (requestId: string, input: { status: Exclude<PayoutRequestStatus, "pending">; adminNotes?: string; userMessage?: string; paymentReference?: string; confirmManualPayment?: boolean }) => request<Pick<PayoutRequest, "id" | "status" | "reviewedAt" | "paidAt" | "paymentReference" | "userMessage">>(`/api/admin/payout-requests/${encodeURIComponent(requestId)}`, { method: "PATCH", body: JSON.stringify(input) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),
-  subscription: (userId: string) => request(`/api/users/${userId}/subscription`),
+  subscription: (userId: string) => request<{ plan: PlanId; status: string }>(`/api/users/${userId}/subscription`),
   usage: async () => { const payload = await request<{ plan: PlanId; status: string; used: number; usage_limit: number; analysis_level: AnalysisLevel }>("/api/usage"); return { plan: payload.plan, status: payload.status, used: payload.used, usageLimit: payload.usage_limit, analysisLevel: payload.analysis_level } as UsageSnapshot; },
   customerPortal: () => request<{ url: string }>("/api/paddle/customer-portal", { method: "POST", body: JSON.stringify({}) }),
   claimPendingPurchase: () => request<{ claimed: number; plan: PlanId | null }>("/api/paddle/claim-pending-purchase", { method: "POST", body: JSON.stringify({}) }),

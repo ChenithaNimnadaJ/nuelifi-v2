@@ -147,13 +147,16 @@ export function AuthScreen({ onAuthenticated, themeMode, onThemeChange, initialM
         onAuthenticated();
         return;
       }
+      const normalizedEmail = email.trim();
+      if (!normalizedEmail) { setMessage("Enter your email address first."); return; }
+      if (mode === "signup" && name.trim().length < 2) { setMessage("Enter your name before creating your account."); return; }
       const result = mode === "signin"
-        ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
-        : await supabase.auth.signUp({ email: email.trim(), password, options: { data: { name: name.trim() }, emailRedirectTo: magicLinkRedirectTo } });
+        ? await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
+        : await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { name: name.trim() }, emailRedirectTo: magicLinkRedirectTo } });
       if (result.error) {
         const authMessage = friendlyAuthError(result.error, "Authentication could not be completed. Please try again.");
-        if (/confirm|verified|verification/i.test(authMessage) && mode === "signin") setVerificationEmail(email.trim());
-        setMessage(/invalid login credentials/i.test(authMessage) ? "The email or password did not match. Check them and try again." : authMessage);
+        if ((result.error.code === "email_not_confirmed" || /confirm|verified|verification/i.test(authMessage)) && mode === "signin") setVerificationEmail(normalizedEmail);
+        setMessage(authMessage);
         return;
       }
       if (result.data.session) { onAuthenticated(); return; }

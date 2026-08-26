@@ -106,3 +106,17 @@ export function readFormattedTotal(response: PricePreviewResponse): string {
   if (!total) throw new Error("Paddle returned no formatted price for this plan.");
   return total;
 }
+
+export function friendlyPaddleError(value: unknown, fallback = "Paid plan checkout could not be completed. Please try again shortly.") {
+  const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const raw = value instanceof Error ? value.message : typeof source.message === "string" ? source.message : typeof source.detail === "string" ? source.detail : "";
+  const code = typeof source.code === "string" ? source.code : typeof source.type === "string" ? source.type : "";
+  const normalized = `${raw} ${code}`.toLowerCase();
+  if (/cancel|closed|dismissed|aborted/i.test(normalized)) return "Checkout was closed before payment was started.";
+  if (/failed to fetch|network|timeout|timed out|offline|503|502|504/i.test(normalized)) return "We could not connect to the payment service. Check your connection and try again.";
+  if (/price|pricing|preview|formatted price|country|currency/i.test(normalized)) return "We could not load the latest plan price. Please retry in a moment.";
+  if (/token|client.?token|approved domain|origin|initializ|not configured|configuration|unauthori[sz]ed|forbidden/i.test(normalized)) return "Paid plan checkout is not available for this site yet. Please try again later.";
+  if (/no active billing account|billing account.*linked|not linked to this/i.test(normalized)) return "No active billing account is linked to this Neulifi profile yet. Refresh after your payment is confirmed, or use the same account email used at checkout.";
+  if (/already.*subscrib|active.*subscription/i.test(normalized)) return "This plan already has an active subscription. Manage billing from your Neulifi account.";
+  return fallback;
+}

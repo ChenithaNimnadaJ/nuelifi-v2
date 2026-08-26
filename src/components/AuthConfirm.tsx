@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getHealthySession, supabase } from "../lib/supabase";
 import { clearPasswordRecoveryContext, markPasswordRecoveryContext } from "../lib/authRecovery";
+import { friendlyAuthError } from "../lib/authErrors";
 import { BrandMark } from "./BrandMark";
 
 const emailTypes = new Set(["signup", "magiclink", "recovery", "invite", "email_change", "email"]);
@@ -44,6 +45,8 @@ function clearCallbackUrl() {
 function callbackMessage(payload: CallbackPayload) {
   const raw = payload.errorDescription || payload.error || payload.errorCode;
   if (!raw) return "";
+  const mapped = friendlyAuthError({ message: payload.errorDescription || payload.error, code: payload.errorCode }, "");
+  if (/Passwordless sign-up|email is not confirmed|Too many emails|New account creation/i.test(mapped)) return mapped;
   return /expired|invalid/i.test(raw) ? "This sign-in link has expired or is no longer valid. Request a new one from Neulifi." : "We could not complete this sign-in link. Request a new one and try again.";
 }
 
@@ -131,7 +134,9 @@ export function AuthConfirm({ onAuthenticated, themeMode, onThemeChange, passwor
       if (!active) return;
       clearPasswordRecoveryContext();
       clearCallbackUrl();
-      setMessage(error instanceof Error && /expired|invalid|code verifier|verifier/i.test(error.message) ? "This sign-in link has expired or is no longer valid. Request a new one from Neulifi." : error instanceof Error && error.message === "incomplete" ? "This sign-in link is incomplete. Request a new one from Neulifi." : error instanceof Error && error.message === "verification_timed_out" ? "The sign-in link took too long to verify. Request a new one and try again." : error instanceof Error && error.message === "recovery_context_unavailable" ? "Your browser could not save the recovery state. Allow site storage, then request a new link and try again." : "We could not verify this sign-in link. Request a new one and try again.");
+      const rawMessage = error instanceof Error ? error.message : "";
+      const mappedMessage = friendlyAuthError(error, "");
+      setMessage(/Passwordless sign-up|email is not confirmed|Too many emails|New account creation/i.test(mappedMessage) ? mappedMessage : /expired|invalid|code verifier|verifier/i.test(rawMessage) ? "This sign-in link has expired or is no longer valid. Request a new one from Neulifi." : rawMessage === "incomplete" ? "This sign-in link is incomplete. Request a new one from Neulifi." : rawMessage === "verification_timed_out" ? "The sign-in link took too long to verify. Request a new one and try again." : rawMessage === "recovery_context_unavailable" ? "Your browser could not save the recovery state. Allow site storage, then request a new link and try again." : "We could not verify this sign-in link. Request a new one and try again.");
       setState("error");
     });
     return () => { active = false; };

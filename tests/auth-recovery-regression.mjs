@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw, paymentMigration] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw, paymentMigration, welcome] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -29,6 +29,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("src/lib/api.ts"),
   read("public/sw.js"),
   read("supabase/migrations/202608260001_reconcile_paddle_entitlements.sql"),
+  read("src/components/Welcome.tsx"),
 ]);
 
 const typescript = await import("typescript");
@@ -71,6 +72,27 @@ test("provider rate limits become safe, actionable messages", () => {
   assert.match(friendlyAuthError({ code: "otp_disabled" }, "fallback"), /Passwordless sign-up is not enabled right now/);
   assert.match(friendlyAuthError({ code: "signup_disabled" }, "fallback"), /New account creation is currently disabled/);
   assert.equal(friendlyAuthError(new Error("Unexpected end of JSON input"), "fallback"), "fallback");
+});
+
+test("field-specific auth errors remain actionable", () => {
+  const { friendlyAuthError } = authErrorsModule;
+  assert.match(authScreen, /name\.trim\(\)\.length < 2/);
+  assert.match(authScreen, /Enter your name before creating your account/);
+  assert.match(authScreen, /result\.error\.code === "email_not_confirmed"/);
+  assert.match(authErrors, /email_not_confirmed/);
+  assert.match(friendlyAuthError({ code: "email_not_confirmed" }, "fallback"), /email is not confirmed/);
+  assert.match(friendlyAuthError({ code: "user_already_exists" }, "fallback"), /account already exists/);
+});
+
+test("Paddle errors and existing paid accounts have recovery paths", () => {
+  assert.match(paddle, /export function friendlyPaddleError/);
+  assert.match(paddlePricing, /friendlyPaddleError/);
+  assert.match(paddlePricing, /Retry loading prices/);
+  assert.match(paddleCheckout, /friendlyPaddleError/);
+  assert.match(app, /friendlyPaddleError\(value/);
+  assert.match(welcome, /neulifiApi\.subscription\(userId\)/);
+  assert.match(welcome, /activeLinkedPlan/);
+  assert.match(app, /userId=\{sessionUser\?\.id\}/);
 });
 
 test("successful empty account RPC responses do not leak a JSON parse error", () => {

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { getHealthySession } from "../lib/supabase";
-import { fetchPaddleRuntimeConfig, getPaddle, paddleTiers, readFormattedTotal, type PaddleBillingInterval, type PaddleRuntimeConfig, type Tier } from "../lib/paddle";
+import { fetchPaddleRuntimeConfig, friendlyPaddleError, getPaddle, paddleTiers, readFormattedTotal, type PaddleBillingInterval, type PaddleRuntimeConfig, type Tier } from "../lib/paddle";
 
 type PaddlePricingProps = { onAuth: (mode: "signin" | "signup", returnPath?: "/app" | "/welcome") => void };
 type PriceState = Record<string, string>;
 
 function publicOrigin() { return import.meta.env.MODE === "production" ? "https://neulifi.online" : window.location.origin; }
 
-async function loadPrices(config: PaddleRuntimeConfig): Promise<{ prices: PriceState; failures: number }> {
+async function loadPrices(config: PaddleRuntimeConfig): Promise<{ prices: PriceState; failures: number; firstFailure?: unknown }> {
   const paddle = await getPaddle(config);
   const results = await Promise.allSettled(paddleTiers.flatMap((tier) => (Object.entries(tier.priceId) as [PaddleBillingInterval, string][]).filter(([, priceId]) => priceId).map(async ([interval, priceId]) => {
     const preview = await paddle.PricePreview({ items: [{ priceId, quantity: 1 }], ...(config.countryCode ? { address: { countryCode: config.countryCode } } : {}) });
@@ -15,11 +15,12 @@ async function loadPrices(config: PaddleRuntimeConfig): Promise<{ prices: PriceS
   })));
   const prices: PriceState = {};
   let failures = 0;
+  let firstFailure: unknown;
   for (const result of results) {
     if (result.status === "fulfilled") prices[result.value[0]] = result.value[1];
-    else failures += 1;
+    else { failures += 1; firstFailure ??= result.reason; }
   }
-  return { prices, failures };
+  return { prices, failures, firstFailure };
 }
 
 export function PaddlePricing({ onAuth }: PaddlePricingProps) {
@@ -30,38 +31,45 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
   const [loading, setLoading] = useState(true);
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [retryNonce, setRetryNonce] = useState(0);
+  const [errorMode, setErrorMode] = useState<"prices" | "checkout">("prices");
+  const [checkoutRetryTier, setCheckoutRetryTier] = useState<Tier | null>(null);
 
   useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true);
       setError("");
+      setErrorMode("prices");
+      setCheckoutRetryTier(null);
       try {
         const config = await fetchPaddleRuntimeConfig();
-        const { prices: nextPrices, failures } = await loadPrices(config);
+        const { prices: nextPrices, failures, firstFailure } = await loadPrices(config);
         if (active) {
           setRuntimeConfig(config);
           setCountryCode(config.countryCode);
           setPrices(nextPrices);
-          if (failures) setError(failures === paddleTiers.filter((tier) => tier.planId !== "free" && tier.priceId.year).length ? "Annual prices could not be loaded. Please refresh and try again." : "Some annual prices could not be loaded. Those plans will remain unavailable until pricing is confirmed.");
+          if (failures) setError(friendlyPaddleError(firstFailure, failures === paddleTiers.filter((tier) => tier.planId !== "free" && tier.priceId.year).length ? "Annual prices could not be loaded. Please retry in a moment." : "Some annual prices could not be loaded. Please retry in a moment."));
         }
       } catch (value) {
-        if (active) setError(value instanceof Error ? value.message : "Paddle pricing could not be loaded.");
+        if (active) setError(friendlyPaddleError(value, "Paddle pricing could not be loaded. Please retry in a moment."));
       } finally {
         if (active) setLoading(false);
       }
-    }
+    };
     void load();
     return () => { active = false; };
-  }, []);
+  }, [retryNonce]);
 
   const priceLabel = (tier: Tier) => tier.planId === "free" ? "Free" : prices[`${tier.planId}-${interval}`] || "Unavailable";
   const checkout = async (tier: Tier) => {
     if (tier.planId === "free") { onAuth("signup"); return; }
     if (!tier.priceId.year) { setError(`${tier.name} is not configured for annual billing yet.`); return; }
-    if (!runtimeConfig) { setError("Paddle checkout is still loading. Please try again in a moment."); return; }
+    if (!runtimeConfig) { setError("Paddle checkout is still loading. Please try again in a moment."); setErrorMode("checkout"); setCheckoutRetryTier(tier); return; }
     setCheckoutPlan(tier.planId);
     setError("");
+    setErrorMode("checkout");
+    setCheckoutRetryTier(tier);
     window.localStorage.setItem("neulifi-checkout-intent", JSON.stringify({ plan: tier.planId, billing_interval: "year", startedAt: Date.now() }));
     try {
       const session = await getHealthySession().catch(() => null);
@@ -74,7 +82,9 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       });
     } catch (value) {
       window.localStorage.removeItem("neulifi-checkout-intent");
-      setError(value instanceof Error ? value.message : "Checkout could not be opened.");
+      setError(friendlyPaddleError(value));
+      setErrorMode("checkout");
+      setCheckoutRetryTier(tier);
     } finally {
       setCheckoutPlan(null);
     }
@@ -88,7 +98,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       <p>Choose the level that fits today. Paid plans are billed from the first cycle—there are no free trials—and you can manage your plan from your account.</p>
       <div className="paddle-billing-note" aria-label="Billing frequency"><strong>Billed annually</strong><small>Annual-only plans</small></div>
     </section>
-    {error && <div className="data-note data-error paddle-status" role="alert">{error}</div>}
+    {error && <div className="data-note data-error paddle-status" role="alert"><span>{error}</span><button className="text-button" type="button" onClick={() => { const retryTier = checkoutRetryTier; setError(""); if (errorMode === "checkout" && retryTier) void checkout(retryTier); else setRetryNonce((value) => value + 1); }}>{errorMode === "checkout" ? "Try checkout again" : "Retry loading prices"}</button></div>}
     <section className="plan-grid plan-grid-premium paddle-plan-grid" aria-label="Neulifi plans">
       {paddleTiers.map((tier) => <PaddlePlanCard key={tier.planId} tier={tier} interval={interval} price={priceLabel(tier)} loading={loading} checkoutPlan={checkoutPlan} onSubscribe={() => void checkout(tier)} />)}
     </section>

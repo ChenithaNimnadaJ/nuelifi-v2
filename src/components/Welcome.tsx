@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { neulifiApi } from "../lib/api";
 
-type WelcomeProps = { signedIn: boolean; onContinue: () => void; onSignUp: () => void };
+type WelcomeProps = { signedIn: boolean; userId?: string; onContinue: () => void; onSignUp: () => void };
 type ClaimState = "checking" | "claimed" | "none" | "error";
 
-export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
+export function Welcome({ signedIn, userId, onContinue, onSignUp }: WelcomeProps) {
   const [claimState, setClaimState] = useState<ClaimState>(signedIn ? "checking" : "none");
   const [claimedPlan, setClaimedPlan] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState("");
   const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
@@ -20,9 +21,15 @@ export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
     const check = async () => {
       try {
         const result = await neulifiApi.claimPendingPurchase();
+        const linked = userId ? await neulifiApi.subscription(userId).catch(() => null) : null;
         if (!active) return;
-        if (result.claimed > 0) {
-          setClaimedPlan(result.plan === "premium" ? "Premium" : result.plan === "pro" ? "Pro" : null);
+        const linkedPlan = linked?.plan === "premium" || linked?.plan === "pro" ? linked.plan : null;
+        const linkedStatus = String(linked?.status || "").toLowerCase();
+        const activeLinkedPlan = linkedPlan && linkedStatus !== "unavailable" && linkedStatus !== "cancelled" ? linkedPlan : null;
+        const connectedPlan = result.claimed > 0 ? result.plan : activeLinkedPlan;
+        if (connectedPlan === "premium" || connectedPlan === "pro") {
+          setClaimedPlan(connectedPlan === "premium" ? "Premium" : "Pro");
+          setClaimError("");
           window.localStorage.removeItem("neulifi-checkout-intent");
           setClaimState("claimed");
           return;
@@ -33,8 +40,11 @@ export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
         } else {
           setClaimState("none");
         }
-      } catch {
-        if (active) setClaimState("error");
+      } catch (error) {
+        if (active) {
+          setClaimError(error instanceof Error ? error.message : "We could not check the purchase yet.");
+          setClaimState("error");
+        }
       }
     };
     void check();
@@ -52,8 +62,8 @@ export function Welcome({ signedIn, onContinue, onSignUp }: WelcomeProps) {
       : claimState === "claimed"
         ? `Your ${claimedPlan || "paid"} plan is now linked to this account. You can continue into your private Neulifi space.`
         : claimState === "error"
-          ? "We could not check the purchase yet. You can continue to Neulifi and refresh your account shortly."
-          : "Your purchase is still syncing. If you completed checkout with another email, sign in with that email; otherwise try checking again in a moment.";
+          ? `${claimError || "We could not check the purchase yet."} You can continue to Neulifi and refresh your account shortly.`
+          : "We could not find your purchase yet. It may still be processing. If you used a different email for payment, sign in with that account, or try checking again in a few minutes.";
 
   return <main className="welcome-page">
     <div className="welcome-card">
