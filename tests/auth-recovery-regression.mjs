@@ -66,6 +66,9 @@ test("provider rate limits become safe, actionable messages", () => {
   assert.match(authErrors, /wait a few minutes/);
   assert.match(friendlyAuthError(new Error("over_email_send_rate_limit"), "fallback"), /wait a few minutes/);
   assert.match(friendlyAuthError(new Error("Auth session missing!"), "fallback"), /recovery session is no longer active/);
+  assert.match(friendlyAuthError(new Error("Signups are not allowed for OTP"), "fallback"), /Passwordless sign-up is not enabled right now/);
+  assert.match(friendlyAuthError({ code: "otp_disabled" }, "fallback"), /Passwordless sign-up is not enabled right now/);
+  assert.match(friendlyAuthError({ code: "signup_disabled" }, "fallback"), /New account creation is currently disabled/);
   assert.equal(friendlyAuthError(new Error("Unexpected end of JSON input"), "fallback"), "fallback");
 });
 
