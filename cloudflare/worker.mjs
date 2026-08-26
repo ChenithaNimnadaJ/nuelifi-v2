@@ -297,6 +297,18 @@ function routeUserId(pathname, prefix) { const match = pathname.match(new RegExp
 async function requireRouteUser(request, env, pathname, prefix) { const verifiedUser = await verifyUser(request, env); const requestedUserId = routeUserId(pathname, prefix); if (!requestedUserId || requestedUserId !== verifiedUser.id) throw new Error("Not allowed"); return verifiedUser; }
 async function callUserRpc(env, rpc, body) { const response = await supabaseAdminFetch(env, `/rest/v1/rpc/${rpc}`, { method: "POST", body: JSON.stringify(body) }); if (!response.ok) throw new Error("Could not complete that account action."); const text = await response.text(); if (!text.trim()) return null; try { return JSON.parse(text); } catch { throw new Error("Could not read that account response."); } }
 async function listUserRows(env, table, userId, select, extra = "") { const response = await supabaseAdminFetch(env, `/rest/v1/${table}?user_id=eq.${encodeURIComponent(userId)}&select=${encodeURIComponent(select)}${extra}`); if (!response.ok) throw new Error("Could not load your account data."); return response.json(); }
+async function markOverdueTasksBestEffort(env, userId) {
+  const userFilter = encodeURIComponent(userId);
+  const now = encodeURIComponent(new Date().toISOString());
+  const response = await supabaseAdminFetch(env, `/rest/v1/actions?user_id=eq.${userFilter}&completed=eq.false&status=eq.upcoming&due_at=lt.${now}&select=id&limit=100`);
+  if (!response.ok) return;
+  const rows = await response.json().catch(() => []);
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const actionId = uuidPath(row?.id);
+    if (!actionId) continue;
+    await supabaseAdminFetch(env, `/rest/v1/actions?id=eq.${encodeURIComponent(actionId)}&user_id=eq.${userFilter}&completed=eq.false&status=eq.upcoming`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "missed" }) }).catch(() => undefined);
+  }
+}
 async function listAffiliatePayouts(env, affiliateId) {
   const id = encodeURIComponent(affiliateId);
   const [optionsResponse, countryResponse, methodResponse, requestsResponse] = await Promise.all([
@@ -422,7 +434,7 @@ async function handleUserEndpoint(request, env) {
     }
     if (pathname === "/api/user/actions" && request.method === "GET") {
       const user = await verifyUser(request, env);
-      await callUserRpc(env, "mark_missed_tasks", { p_user_id: user.id });
+      await markOverdueTasksBestEffort(env, user.id);
       const rows = await listUserRows(env, "actions", user.id, "id,user_id,meal_id,title,description,completed,status,due_at,created_at,completed_at", "&order=status.asc,due_at.asc.nullslast&limit=100");
       return json((Array.isArray(rows) ? rows : []).map(actionView), 200, request, env);
     }
@@ -518,6 +530,22 @@ export default { async fetch(request, env) { const url = new URL(request.url); c
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication required";
       const status = /Authentication|required|session/i.test(message) ? 401 : /configured/i.test(message) ? 503 : 500;
+      return json({ error: message }, status, request, env);
+    }
+  }
+  if (url.pathname.startsWith("/api/users/") && url.pathname.endsWith("/subscription")) {
+    if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, request, env);
+    try {
+      const verifiedUser = await requireRouteUser(request, env, url.pathname, "/api/users");
+      const response = await supabaseAdminFetch(env, `/rest/v1/subscriptions?user_id=eq.${encodeURIComponent(verifiedUser.id)}&select=plan,status&limit=1`);
+      if (!response.ok) throw new Error("Could not load your subscription.");
+      const rows = await response.json();
+      const row = Array.isArray(rows) ? rows[0] : null;
+      const plan = row?.plan === "premium" ? "premium" : row?.plan === "pro" ? "pro" : "free";
+      return json({ plan, status: row?.status || "unavailable" }, 200, request, env);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not load your subscription.";
+      const status = /Authentication|required|session/i.test(message) ? 401 : /Not allowed/i.test(message) ? 403 : 500;
       return json({ error: message }, status, request, env);
     }
   }

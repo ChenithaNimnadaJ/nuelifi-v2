@@ -93,6 +93,9 @@ test("Paddle errors and existing paid accounts have recovery paths", () => {
   assert.match(welcome, /neulifiApi\.subscription\(userId\)/);
   assert.match(welcome, /activeLinkedPlan/);
   assert.match(app, /userId=\{sessionUser\?\.id\}/);
+  assert.match(worker, /url\.pathname\.startsWith\("\/api\/users\/"\) && url\.pathname\.endsWith\("\/subscription"\)/);
+  assert.match(worker, /requireRouteUser\(request, env, url\.pathname, "\/api\/users"\)/);
+  assert.match(worker, /select=plan,status&limit=1/);
 });
 
 test("successful empty account RPC responses do not leak a JSON parse error", () => {
@@ -189,6 +192,9 @@ test("payout API transport errors stay feature-neutral and selected crypto optio
   assert.doesNotMatch(productScreens, /item\.currency === "USDT" && item\.network === "TRC20"/);
   assert.match(worker, /Only crypto transfer payouts are supported/);
   assert.match(worker, /That payout request identifier is not valid/);
+  assert.match(worker, /async function markOverdueTasksBestEffort\(env, userId\)/);
+  assert.match(worker, /await markOverdueTasksBestEffort\(env, user\.id\)/);
+  assert.doesNotMatch(worker, /callUserRpc\(env, "mark_missed_tasks"/);
 });
 
 test("payout copy and active surfaces remain crypto-only", () => {
