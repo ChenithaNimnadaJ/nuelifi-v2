@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw, paymentMigration] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -28,6 +28,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("public/sitemap.xml"),
   read("src/lib/api.ts"),
   read("public/sw.js"),
+  read("supabase/migrations/202608260001_reconcile_paddle_entitlements.sql"),
 ]);
 
 const typescript = await import("typescript");
@@ -128,6 +129,22 @@ test("Paddle webhook status mapping is defined and app-compatible", () => {
   assert.match(worker, /\["canceled", "cancelled", "expired"\]/);
   assert.match(worker, /\["past_due", "paused", "payment_failed"\]/);
   assert.match(worker, /function paddleAppStatus\(status\) \{ return appSubscriptionStatus/);
+});
+
+test("Paddle entitlements reconcile by exact provider email and run during app bootstrap", () => {
+  assert.match(paymentMigration, /create or replace function public\.sync_paddle_customer/);
+  assert.match(paymentMigration, /lower\(btrim\(email\)\) = normalized_email/);
+  assert.match(paymentMigration, /create or replace function public\.claim_paddle_pending_purchases\(p_user_id uuid\)/);
+  assert.match(paymentMigration, /from public\.paddle_customers c/);
+  assert.match(paymentMigration, /lower\(btrim\(c\.email\)\) = account_email/);
+  assert.match(paymentMigration, /status = 'pending'/);
+  assert.match(paymentMigration, /provider_status in \('active', 'trialing'\)/);
+  assert.match(worker, /\/api\/paddle\/claim-pending-purchase/);
+  assert.match(worker, /async function paddleCustomerData\(env, customerId\)/);
+  assert.match(worker, /const providerCustomer = eventEmail \? \{\} : await paddleCustomerData\(env, customerId\)/);
+  assert.match(worker, /email = paddleEmail\(await paddleCustomerData\(env, customerId\)\)/);
+  assert.match(worker, /function paddleEmail\(event, data = event\?\.data && typeof event\.data === "object" \? event\.data : event && typeof event === "object" \? event/);
+  assert.match(app, /await neulifiApi\.claimPendingPurchase\(\)\.catch/);
 });
 
 test("the Worker implements the declared read-only auth identity endpoint", () => {
