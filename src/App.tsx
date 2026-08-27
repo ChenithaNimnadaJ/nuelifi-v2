@@ -141,7 +141,7 @@ export default function App() {
   const [dataError, setDataError] = useState("");
   const [sessionUser, setSessionUser] = useState<{ id: string; email?: string; name?: string; referralCode?: string } | null>(null);
   const [streak, setStreak] = useState<StreakSnapshot>({ currentStreak: 0, longestStreak: 0, lastActivityDate: null });
-  const [referrals, setReferrals] = useState<ReferralSummary>({ code: null, referredUsers: 0, paidUsers: 0, paidUsersThisMonth: 0, referredScans: 0, pendingEarnings: 0, availableEarnings: 0, lifetimeEarnings: 0, paidCommissionPercent: 30 });
+  const [referrals, setReferrals] = useState<ReferralSummary>({ code: null, referredUsers: 0, paidUsers: 0, paidUsersThisMonth: 0, referredScans: 0, pendingEarnings: 0, availableEarnings: 0, lifetimeEarnings: 0, paidCommissionPercent: 15 });
   const [referralLoading, setReferralLoading] = useState(false);
   const [authReady, setAuthReady] = useState(!supabase);
   const [onboardingRequired, setOnboardingRequired] = useState(false);

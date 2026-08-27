@@ -364,3 +364,29 @@ test("Cloudflare deployment keeps the canonical domain and assets binding explic
   assert.match(wrangler, /binding = "ASSETS"/);
   assert.match(wrangler, /directory = "dist"/);
 });
+
+test("paid affiliate commissions use 15 percent for Pro and Premium", async () => {
+  const migration = await read("supabase/migrations/202608270003_paid_plan_commission_15_percent.sql");
+  const app = await read("src/App.tsx");
+  const data = await read("src/lib/supabaseData.ts");
+  assert.match(migration, /values \('paid_commission_percent', 15\)/);
+  assert.match(migration, /coalesce\(setting_value, 15\)/g);
+  assert.match(migration, /commission_percent := 15/g);
+  assert.match(migration, /reward_amount := round\(plan_amount \* commission_percent \/ 100, 6\)/);
+  assert.doesNotMatch(migration, /30/);
+  assert.doesNotMatch(app, /paidCommissionPercent: 30/);
+  assert.doesNotMatch(data, /paidCommissionPercent, 30/);
+  assert.equal(100 * 0.15, 15);
+  assert.equal(30 * 0.15, 4.5);
+});
+
+test("paid referral rewards use actual Paddle totals when a completed transaction supplies one", async () => {
+  const worker = await read("cloudflare/worker.mjs");
+  const migration = await read("supabase/migrations/202608270004_remove_legacy_affiliate_reward_overload.sql");
+  assert.match(worker, /function paddlePaidAmount\(event\)/);
+  assert.match(worker, /p_paid_amount/);
+  assert.match(worker, /transaction\.completed/);
+  assert.match(migration, /create or replace function public\.record_paid_referral_reward\(\n  p_referred_user_id uuid,\n  p_subscription_key text,\n  p_plan text\n\)/);
+  assert.equal(12.5 * 0.15, 1.875);
+  assert.equal(30 * 0.15, 4.5);
+});
