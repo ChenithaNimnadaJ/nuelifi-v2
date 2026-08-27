@@ -397,3 +397,17 @@ test("paid referral rewards use actual Paddle totals when a completed transactio
   assert.equal(12.5 * 0.15, 1.875);
   assert.equal(30 * 0.15, 4.5);
 });
+
+const installPromptSource = await read("src/components/InstallPrompt.tsx");
+const installManifest = await read("public/manifest-v2.webmanifest");
+test("Android install prompt is gated to /app and PWA metadata includes standard icons", () => {
+  assert.match(installPromptSource, /beforeinstallprompt/);
+  assert.match(installPromptSource, /isAndroid/);
+  assert.match(installPromptSource, /!active \|\| !available/);
+  assert.ok(installPromptSource.includes('window.location.pathname === "/app"'));
+  assert.match(installPromptSource, /display-mode: standalone/);
+  assert.match(installPromptSource, /event\.prompt\(\)/);
+  assert.ok(installManifest.includes('"id": "/app"'));
+  assert.match(installManifest, /"sizes": "192x192"/);
+  assert.match(installManifest, /"sizes": "512x512"/);
+});
