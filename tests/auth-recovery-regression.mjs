@@ -321,3 +321,38 @@ test("notifications remain optional, permission-safe, and deterministic", () => 
   assert.match(notifications, /category: "meal"/);
   assert.match(notifications, /category: "weekly"/);
 });
+
+
+test("Partnero tracking and Paddle attribution are wired without monkey-patching checkout", async () => {
+  const partnero = await read("src/lib/partnero.ts");
+  assert.match(indexHtml, /https:\/\/app\.partnero\.com\/js\/universal\.js/);
+  assert.match(indexHtml, /po\("program", "JRHP7SUP", "load"\)/);
+  assert.match(partnero, /URLSearchParams\(window\.location\.search\)\.get\(PARTNERO_QUERY_PARAM\)/);
+  assert.match(partnero, /partnero_partner/);
+  assert.match(partnero, /customer_key: customerKey/);
+  assert.match(paddlePricing, /withPartneroCustomData\(\{ billing_interval: "year", source: "neulifi" \}\)/);
+  assert.match(paddleCheckout, /withPartneroCustomData\(\{ source: "neulifi" \}\)/);
+  assert.doesNotMatch(partnero, /Paddle\.Checkout\.open\s*=/);
+});
+
+test("Partnero helper persists a referral and merges customer_key into Paddle data", async () => {
+  const partnero = await read("src/lib/partnero.ts");
+  const partneroModule = await import(`data:text/javascript;base64,${Buffer.from(typescript.transpileModule(partnero, { compilerOptions: { module: typescript.ModuleKind.ESNext, target: typescript.ScriptTarget.ES2022 } }).outputText).toString("base64")}`);
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  let cookie = "";
+  globalThis.window = { location: { search: "?aff=TEST_PARTNER" } };
+  globalThis.document = {
+    get cookie() { return cookie; },
+    set cookie(value) { cookie = cookie ? `${cookie}; ${value.split(";")[0]}` : value.split(";")[0]; },
+  };
+
+  try {
+    assert.deepEqual(partneroModule.withPartneroCustomData({ billing_interval: "year" }), { billing_interval: "year", customer_key: "TEST_PARTNER" });
+    globalThis.window.location.search = "";
+    assert.deepEqual(partneroModule.withPartneroCustomData({ source: "neulifi" }), { source: "neulifi", customer_key: "TEST_PARTNER" });
+  } finally {
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+  }
+});

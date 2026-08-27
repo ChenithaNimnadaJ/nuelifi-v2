@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { getPartneroCustomerKey } from "./lib/partnero";
 
 type BoundaryState = { error: Error | null };
 
@@ -15,6 +16,8 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, Boundary
 }
 
 if (import.meta.env.MODE === "production" && "serviceWorker" in navigator) window.addEventListener("load", () => { void navigator.serviceWorker.register("/sw.js").catch(() => undefined); });
+
+getPartneroCustomerKey();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

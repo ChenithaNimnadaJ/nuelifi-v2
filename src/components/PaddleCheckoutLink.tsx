@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchPaddleRuntimeConfig, friendlyPaddleError, getPaddle } from "../lib/paddle";
+import { withPartneroCustomData } from "../lib/partnero";
 
 function productionSuccessUrl() {
   return import.meta.env.MODE === "production" ? "https://neulifi.online/welcome" : new URL("/welcome", window.location.origin).toString();
@@ -22,6 +23,7 @@ export function PaddleCheckoutLink() {
       if (!active) return;
       paddle.Checkout.open({
         transactionId,
+        customData: withPartneroCustomData({ source: "neulifi" }),
         settings: { displayMode: "overlay", variant: "one-page", theme: "light", locale: "en", successUrl: productionSuccessUrl() },
       });
     }).catch((value) => {

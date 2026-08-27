@@ -16,6 +16,28 @@
     <link rel="apple-touch-icon" href="/neulifi-logo.png" />
     <link rel="icon" type="image/svg+xml" href="/neulifi-logo-v2.svg" />
     <link rel="canonical" href="https://neulifi.online/" />
+    <!-- PartneroJS -->
+    <script>
+      (function (p, t, n, e, r, o) {
+        p["__partnerObject"] = r;
+        function f() {
+          var c = { a: arguments, q: [] };
+          var r = this.push(c);
+          return typeof r !== "number" ? r : f.bind(c.q);
+        }
+        f.q = f.q || [];
+        p[r] = p[r] || f.bind(f.q);
+        p[r].q = p[r].q || f.q;
+        o = t.createElement(n);
+        var firstScript = t.getElementsByTagName(n)[0];
+        o.async = 1;
+        o.src = e + "?v" + ~~(new Date().getTime() / 1e6);
+        firstScript.parentNode.insertBefore(o, firstScript);
+      })(window, document, "script", "https://app.partnero.com/js/universal.js", "po");
+      po("settings", "assets_host", "https://assets.partnero.com");
+      po("program", "JRHP7SUP", "load");
+    </script>
+    <!-- End PartneroJS -->
     <meta property="og:site_name" content="Neulifi" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://neulifi.online/" />

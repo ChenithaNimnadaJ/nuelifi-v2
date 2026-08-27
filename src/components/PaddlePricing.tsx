@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getHealthySession } from "../lib/supabase";
 import { fetchPaddleRuntimeConfig, friendlyPaddleError, getPaddle, paddleTiers, readFormattedTotal, type PaddleBillingInterval, type PaddleRuntimeConfig, type Tier } from "../lib/paddle";
+import { withPartneroCustomData } from "../lib/partnero";
 
 type PaddlePricingProps = { onAuth: (mode: "signin" | "signup", returnPath?: "/app" | "/welcome") => void };
 type PriceState = Record<string, string>;
@@ -77,7 +78,7 @@ export function PaddlePricing({ onAuth }: PaddlePricingProps) {
       paddle.Checkout.open({
         items: [{ priceId: tier.priceId.year, quantity: 1 }],
         customer: session?.user?.email ? { email: session.user.email } : undefined,
-        customData: { billing_interval: "year", source: "neulifi" },
+        customData: withPartneroCustomData({ billing_interval: "year", source: "neulifi" }),
         settings: { displayMode: "overlay", variant: "one-page", successUrl: `${publicOrigin()}/welcome` },
       });
     } catch (value) {
