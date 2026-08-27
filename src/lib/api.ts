@@ -14,7 +14,7 @@ export interface Action { id: string; userId: string; mealId: string | null; tit
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
 export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
 export interface StreakSnapshot { currentStreak: number; longestStreak: number; lastActivityDate: string | null; }
-export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; }
+export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; paidCommissionPercent: number; }
 export type PayoutMethodType = "crypto_transfer";
 export type PayoutRequestStatus = "pending" | "approved" | "paid" | "rejected" | "cancelled";
 export interface PayoutMethodOption { methodType: PayoutMethodType; currency: string; network: string; displayName: string; memoRequired: boolean; countryCodes: string[]; }
