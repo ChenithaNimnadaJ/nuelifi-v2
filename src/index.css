@@ -1345,3 +1345,39 @@ svg.auth-icon-logo { color: var(--brand-strong); }
 .history-summary strong { color: var(--text); font-size: 21px; }
 @media (max-width: 900px) { .insights-grid { grid-template-columns: 1fr; } .insights-history-card { grid-column: auto; } .goal-editor { grid-template-columns: repeat(2, minmax(0, 1fr)); } .goal-editor .button { width: 100%; } }
 @media (max-width: 600px) { .insights-page-heading { display: grid; gap: 8px; } .insights-data-status { white-space: normal; } .insights-card-heading { display: grid; } .insights-chart { height: 230px; } .timing-row { grid-template-columns: 64px minmax(0, 1fr) 50px; } .timing-row small { display: none; } .goal-editor, .history-controls { grid-template-columns: 1fr; } .history-row { grid-template-columns: 38px minmax(0, 1fr) 18px; gap: 8px; } .history-macro { display: none; } .history-summary { grid-template-columns: 1fr; } }
+
+/* Final Insights and Profile rhythm pass */
+.insights-section-heading { display: grid; gap: 5px; margin: 10px 0 -2px; }
+.insights-section-heading h2 { margin: 0; font-size: 17px; letter-spacing: -.03em; }
+.insights-section-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.insights-section-heading + .insights-grid { margin-top: 0; }
+.insights-chart-card .recharts-wrapper { overflow: visible; }
+.insights-chart-card .recharts-cartesian-axis-tick-value { dominant-baseline: central; }
+.insights-chart-card .recharts-tooltip-wrapper { z-index: 3; }
+.history-count { font-weight: 600; }
+.profile-screen { display: grid; gap: 0; }
+.profile-screen > .profile-head { margin-bottom: 22px; }
+.profile-screen > .preference-label { margin-top: 30px; }
+.profile-screen > .card, .profile-screen > .notification-card, .profile-screen > .settings-card { margin-top: 12px; }
+.profile-section-heading { align-items: flex-start; gap: 14px; }
+.profile-section-heading > div { min-width: 0; }
+.profile-section-heading p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.profile-screen .account-card, .profile-screen .context-card, .profile-screen .billing-card { padding: clamp(17px, 3vw, 22px); }
+.profile-screen .affiliate-card { margin-top: 20px; }
+.profile-screen .pro-card-action { margin-top: 20px; }
+.profile-screen .sign-out-button { margin-top: 22px; }
+@media (max-width: 600px) {
+  .insights-page { gap: 14px; }
+  .insights-card { padding: 17px; border-radius: 16px; }
+  .insights-chart-card { min-height: 0; }
+  .insights-chart { height: 220px; margin-top: 16px; }
+  .insights-chart-legend { gap: 8px 12px; font-size: 10px; }
+  .insights-section-heading { margin-top: 8px; }
+  .profile-screen > .profile-head { margin-bottom: 18px; }
+  .profile-screen > .preference-label { margin-top: 24px; }
+  .profile-screen .setting-row { min-height: 70px; }
+  .profile-screen .account-row { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .profile-screen .account-row strong { max-width: 100%; text-align: left; }
+  .profile-screen .billing-card .profile-section-heading { display: grid; }
+  .profile-screen .billing-card .button { width: 100%; }
+}
