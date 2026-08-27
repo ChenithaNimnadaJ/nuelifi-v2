@@ -356,3 +356,11 @@ test("Partnero helper persists a referral and merges customer_key into Paddle da
     globalThis.document = originalDocument;
   }
 });
+
+test("Cloudflare deployment keeps the canonical domain and assets binding explicit", async () => {
+  const wrangler = await read("wrangler.toml");
+  assert.match(wrangler, /workers_dev = false/);
+  assert.match(wrangler, /preview_urls = false/);
+  assert.match(wrangler, /binding = "ASSETS"/);
+  assert.match(wrangler, /directory = "dist"/);
+});
