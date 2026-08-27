@@ -411,10 +411,12 @@ async function handleAdminPayoutEndpoint(request, env) {
   }
 }
 function actionView(row) { const completed = row?.status === "completed" || Boolean(row?.completed); return { id: row?.id, userId: row?.user_id, mealId: row?.meal_id || null, title: row?.title || "", description: row?.description || "", completed, status: completed ? "completed" : row?.status === "missed" ? "missed" : "upcoming", dueAt: row?.due_at || null, createdAt: row?.created_at, completedAt: row?.completed_at || null }; }
+function emptyAnalyticsEntitlements() { return { performanceHeatmap: { buckets: [] }, optimalBlueprint: { top: { proteinG: null, carbsG: null, fatG: null, fiberG: null, sampleCount: 0 }, bottom: { proteinG: null, carbsG: null, fatG: null, fiberG: null, sampleCount: 0 }, sampleCount: 0 }, intervalPenalty: { longGap: { averageScore: null, mealCount: 0 }, shortGap: { averageScore: null, mealCount: 0 } }, nutrientVolatility: { series: [], latest: { scoreStddev: null, proteinStddev: null } } }; }
+function restrictAnalyticsEntitlements(raw, plan, status) { const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}; const empty = emptyAnalyticsEntitlements(); const activePaid = status === "active" && (plan === "pro" || plan === "premium"); const activePremium = activePaid && plan === "premium"; return { ...source, performanceHeatmap: activePaid ? source.performanceHeatmap || empty.performanceHeatmap : empty.performanceHeatmap, optimalBlueprint: activePremium ? source.optimalBlueprint || empty.optimalBlueprint : empty.optimalBlueprint, intervalPenalty: activePremium ? source.intervalPenalty || empty.intervalPenalty : empty.intervalPenalty, nutrientVolatility: activePremium ? source.nutrientVolatility || empty.nutrientVolatility : empty.nutrientVolatility }; }
 async function handleUserEndpoint(request, env) {
   const pathname = new URL(request.url).pathname;
   const actionMatch = pathname.match(/^\/api\/user\/actions\/([^/]+)$/);
-  const isUserEndpoint = pathname === "/api/user/ensure-records" || pathname === "/api/user/referral/attribute" || pathname === "/api/user/actions" || pathname === "/api/user/referral-code" || pathname === "/api/user/referral-summary" || pathname === "/api/user/payouts" || pathname === "/api/user/payout-method" || pathname === "/api/user/payout-request" || Boolean(actionMatch);
+  const isUserEndpoint = pathname === "/api/user/ensure-records" || pathname === "/api/user/referral/attribute" || pathname === "/api/user/actions" || pathname === "/api/user/referral-code" || pathname === "/api/user/referral-summary" || pathname === "/api/user/analytics" || pathname === "/api/user/payouts" || pathname === "/api/user/payout-method" || pathname === "/api/user/payout-request" || Boolean(actionMatch);
   if (!isUserEndpoint) return null;
   try {
     if (pathname === "/api/user/ensure-records" && request.method === "POST") {
@@ -466,6 +468,17 @@ async function handleUserEndpoint(request, env) {
       const user = await verifyUser(request, env);
       const raw = await callUserRpc(env, "get_referral_summary", { p_user_id: user.id });
       return json(Array.isArray(raw) ? raw[0] || {} : raw || {}, 200, request, env);
+    }
+    if (pathname === "/api/user/analytics" && request.method === "GET") {
+      const user = await verifyUser(request, env);
+      const subscriptionResponse = await supabaseAdminFetch(env, `/rest/v1/subscriptions?user_id=eq.${encodeURIComponent(user.id)}&select=plan,status&limit=1`);
+      if (!subscriptionResponse.ok) throw new Error("Could not load your subscription for analytics.");
+      const subscriptionRows = await subscriptionResponse.json();
+      const subscriptionRow = Array.isArray(subscriptionRows) ? subscriptionRows[0] : null;
+      const plan = subscriptionRow?.plan === "premium" ? "premium" : subscriptionRow?.plan === "pro" ? "pro" : "free";
+      const status = typeof subscriptionRow?.status === "string" ? subscriptionRow.status : "unavailable";
+      const raw = await callUserRpc(env, "get_user_analytics", { p_user_id: user.id });
+      return json(restrictAnalyticsEntitlements(Array.isArray(raw) ? raw[0] || {} : raw || {}, plan, status), 200, request, env);
     }
     if (pathname === "/api/user/payouts" && request.method === "GET") {
       const user = await verifyUser(request, env);

@@ -12,6 +12,12 @@ export interface User { id: string; email: string; name: string; goals: string[]
 export interface Meal { id: string; userId: string; imageUrl: string; imageUrls?: string[]; mealName: string; capturedAt: string; status: "analysed"; analysis: MealAnalysis; }
 export interface Action { id: string; userId: string; mealId: string | null; title: string; description?: string; completed: boolean; status?: ActionStatus; dueAt?: string | null; createdAt: string; completedAt: string | null; }
 export interface Dashboard { mealsAnalysed: number; actionsCompleted: number; actionsTotal: number; averageMealScore: number; recentMeals: Meal[]; openActions: Action[]; }
+export interface AnalyticsChartPoint { capturedAt: string; label: string; score: number; rollingAverage: number; }
+export interface AnalyticsHeatmapBucket { window: "Morning" | "Afternoon" | "Evening" | "Late Night"; averageScore: number | null; mealCount: number; }
+export interface AnalyticsMacroSummary { proteinG: number | null; carbsG: number | null; fatG: number | null; fiberG: number | null; sampleCount: number; }
+export interface AnalyticsGapSummary { averageScore: number | null; mealCount: number; }
+export interface AnalyticsVolatilityPoint { capturedAt: string; label: string; scoreStddev: number | null; proteinStddev: number | null; }
+export interface AnalyticsPayload { chart: { series: AnalyticsChartPoint[]; target: { min: number; max: number } }; performanceHeatmap: { buckets: AnalyticsHeatmapBucket[] }; optimalBlueprint: { top: AnalyticsMacroSummary; bottom: AnalyticsMacroSummary; sampleCount: number }; intervalPenalty: { longGap: AnalyticsGapSummary; shortGap: AnalyticsGapSummary }; nutrientVolatility: { series: AnalyticsVolatilityPoint[]; latest: { scoreStddev: number | null; proteinStddev: number | null } }; }
 export interface UsageSnapshot { plan: PlanId; status: string; used: number; usageLimit: number; analysisLevel: AnalysisLevel; }
 export interface StreakSnapshot { currentStreak: number; longestStreak: number; lastActivityDate: string | null; }
 export interface ReferralSummary { code: string | null; referredUsers: number; paidUsers: number; paidUsersThisMonth: number; referredScans: number; pendingEarnings: number; availableEarnings: number; lifetimeEarnings: number; paidCommissionPercent: number; }
@@ -72,6 +78,7 @@ export const neulifiApi = {
   adminPayouts: (status = "", search = "") => request<AdminPayoutsResponse>(`/api/admin/payout-requests?status=${encodeURIComponent(status)}&search=${encodeURIComponent(search)}`),
   updateAdminPayout: (requestId: string, input: { status: Exclude<PayoutRequestStatus, "pending">; adminNotes?: string; userMessage?: string; paymentReference?: string; confirmManualPayment?: boolean }) => request<Pick<PayoutRequest, "id" | "status" | "reviewedAt" | "paidAt" | "paymentReference" | "userMessage">>(`/api/admin/payout-requests/${encodeURIComponent(requestId)}`, { method: "PATCH", body: JSON.stringify(input) }),
   insights: (userId: string) => request(`/api/users/${userId}/insights`),
+  analytics: () => request<AnalyticsPayload>("/api/user/analytics"),
   subscription: (userId: string) => request<{ plan: PlanId; status: string }>(`/api/users/${userId}/subscription`),
   usage: async () => { const payload = await request<{ plan: PlanId; status: string; used: number; usage_limit: number; analysis_level: AnalysisLevel }>("/api/usage"); return { plan: payload.plan, status: payload.status, used: payload.used, usageLimit: payload.usage_limit, analysisLevel: payload.analysis_level } as UsageSnapshot; },
   customerPortal: () => request<{ url: string }>("/api/paddle/customer-portal", { method: "POST", body: JSON.stringify({}) }),

@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw, paymentMigration, welcome] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw, paymentMigration, welcome, analyticsMigration] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -30,6 +30,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("public/sw.js"),
   read("supabase/migrations/202608260001_reconcile_paddle_entitlements.sql"),
   read("src/components/Welcome.tsx"),
+  read("supabase/migrations/202608270002_user_analytics.sql"),
 ]);
 
 const typescript = await import("typescript");
@@ -172,6 +173,38 @@ test("Paddle entitlements reconcile by exact provider email and run during app b
   assert.match(worker, /email = paddleEmail\(await paddleCustomerData\(env, customerId\)\)/);
   assert.match(worker, /function paddleEmail\(event, data = event\?\.data && typeof event\.data === "object" \? event\.data : event && typeof event === "object" \? event/);
   assert.match(app, /await neulifiApi\.claimPendingPurchase\(\)\.catch/);
+});
+
+test("SQL-backed analytics uses bounded windows, real persisted indicators, and no AI provider", () => {
+  assert.match(analyticsMigration, /create or replace function public\.get_user_analytics\(p_user_id uuid\)/);
+  assert.match(analyticsMigration, /avg\(b\.score\) over \([\s\S]*rows between 6 preceding and current row/);
+  assert.match(analyticsMigration, /ntile\(10\) over/);
+  assert.match(analyticsMigration, /lag\(b\.captured_at\)/);
+  assert.match(analyticsMigration, /stddev_samp\(b\.score\)/);
+  assert.match(analyticsMigration, /stddev_samp\(b\.protein_g\)/);
+  assert.match(analyticsMigration, /between 5 and 10/);
+  assert.match(analyticsMigration, /between 11 and 15/);
+  assert.match(analyticsMigration, /between 16 and 21/);
+  assert.match(analyticsMigration, /'target', jsonb_build_object\('min', 70, 'max', 100\)/);
+  assert.match(analyticsMigration, /indicators ->> 'protein'/);
+  assert.match(analyticsMigration, /indicators ->> 'carbohydrates'/);
+  assert.match(analyticsMigration, /indicators ->> 'fats'/);
+  assert.match(analyticsMigration, /indicators ->> 'fibre'/);
+  assert.doesNotMatch(analyticsMigration, /gemini|openai|groq/i);
+});
+
+test("analytics endpoint and frontend contract are wired to the real dashboard", () => {
+  assert.match(worker, /pathname === "\/api\/user\/analytics" && request\.method === "GET"/);
+  assert.match(worker, /callUserRpc\(env, "get_user_analytics"/);
+  assert.match(worker, /function restrictAnalyticsEntitlements\(raw, plan, status\)/);
+  assert.match(worker, /status === "active" && \(plan === "pro" \|\| plan === "premium"\)/);
+  assert.match(worker, /const activePremium = activePaid && plan === "premium"/);
+  assert.match(api, /analytics: \(\) => request<AnalyticsPayload>\("\/api\/user\/analytics"\)/);
+  assert.match(supabaseData, /export async function fetchAnalytics/);
+  assert.match(app, /fetchAnalytics\(userId\)/);
+  assert.match(app, /analytics=\{analytics\}/);
+  assert.match(app, /SQL rolling average/);
+  assert.match(app, /Target 70–100/);
 });
 
 test("the Worker implements the declared read-only auth identity endpoint", () => {
