@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw, paymentMigration, welcome, analyticsMigration] = await Promise.all([
+const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, admin, worker, paddle, paddlePricing, paddleCheckout, app, mealFlow, robots, supabaseData, notifications, manifest, logo, indexHtml, freeAds, sitemap, api, sw, paymentMigration, welcome, analyticsMigration, insightsDashboard] = await Promise.all([
   read("src/lib/supabase.ts"),
   read("src/lib/authRecovery.ts"),
   read("src/components/AuthConfirm.tsx"),
@@ -31,6 +31,7 @@ const [supabase, recovery, authConfirm, authScreen, authErrors, productScreens, 
   read("supabase/migrations/202608260001_reconcile_paddle_entitlements.sql"),
   read("src/components/Welcome.tsx"),
   read("supabase/migrations/202608270002_user_analytics.sql"),
+  read("src/components/InsightsDashboard.tsx"),
 ]);
 
 const typescript = await import("typescript");
@@ -203,8 +204,14 @@ test("analytics endpoint and frontend contract are wired to the real dashboard",
   assert.match(supabaseData, /export async function fetchAnalytics/);
   assert.match(app, /fetchAnalytics\(userId\)/);
   assert.match(app, /analytics=\{analytics\}/);
-  assert.match(app, /SQL rolling average/);
-  assert.match(app, /Target 70–100/);
+  assert.match(app, /LazyInsightsDashboard/);
+  assert.match(insightsDashboard, /ResponsiveContainer/);
+  assert.match(insightsDashboard, /rollingAverage/);
+  assert.match(insightsDashboard, /ReferenceArea/);
+  assert.match(insightsDashboard, /Meal timing patterns/);
+  assert.match(insightsDashboard, /Weekly goal/);
+  assert.match(insightsDashboard, /Advanced meal history/);
+  assert.match(insightsDashboard, /onUpgrade=\{\(\) => onUpgrade\("analytics"\)\}/);
 });
 
 test("the Worker implements the declared read-only auth identity endpoint", () => {
